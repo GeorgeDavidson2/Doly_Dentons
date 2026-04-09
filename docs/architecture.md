@@ -260,4 +260,55 @@ doly/
 
 ---
 
+---
+
+## Production Integration — How Doly Fits the Dentons Ecosystem
+
+This prototype uses Groq and `@xenova/transformers` as its AI layer. In a real Dentons deployment, the architecture is **identical except for the AI layer**, which is replaced by existing Dentons infrastructure.
+
+### AI Layer: Prototype vs Production
+
+| Component | Prototype | Production (Dentons) |
+|---|---|---|
+| Text generation (briefings) | Groq — `llama-3.3-70b-versatile` | **DAISY** — Dentons' model-agnostic GenAI platform. Swap Groq calls for DAISY API calls. Same prompt templates. |
+| Embeddings (matching) | `@xenova/transformers` in-process | **DAISY** or a dedicated embedding model via DAISY's plug-and-play architecture |
+| Data handling | Supabase (external) | Firm-controlled private infrastructure — same schema, different host |
+
+### Why This Matters for the Pitch
+DAISY is explicitly model-agnostic — it was built to swap LLMs without rebuilding the platform. Doly's AI calls are abstracted behind `lib/ai/groq.ts` and `lib/ai/embeddings.ts`. Replacing Groq with DAISY is a **one-file change**, not a rebuild. This is a direct answer to any judge who asks "how would this work inside Dentons?"
+
+### Doly's Position in the Ecosystem
+
+```
+FleetAI / DAISY     → General AI productivity for all staff
+Legora              → Document review and legal research
+Luminance           → Contract review at scale
+Intanify            → IP due diligence
+Noxtua              → GDPR-sovereign AI for EU jurisdictions
+                           │
+                    None of these do what Doly does
+                           │
+                           ▼
+Doly                → Lawyer expertise matching, cross-border coordination,
+                       timezone routing, knowledge capture
+                       Sits ON TOP of DAISY — not competing with it
+```
+
+### Data Sovereignty Compliance
+Dentons' investment in **Noxtua** (sovereign EU AI — data never leaves jurisdiction) confirms that data sovereignty is a **hard firm requirement**, not an aspiration. Doly's architecture is designed around this from the start:
+- No client data is stored or transmitted — only lawyer profiles and matter metadata
+- Task routing is assignment logic only — no document content crosses borders
+- All data remains in a single-region database
+- Attorney-client privilege is fully protected across all 80+ markets
+
+### Office Hours — Adoption Pathway
+**Office Hours** is Dentons' own legal tech incubator (launched April 2025, UKIME). It follows a formal stage gate: Proof of Technology → Pilot → Commercial agreement, scalable globally. Doly directly addresses **3 of Office Hours' 6 focus areas**:
+- Knowledge management (Context + Field Notes)
+- Communication and collaboration (Connect + gamification)
+- Document lifecycle and matter management (Flow + task routing)
+
+The NUGIC prototype serves as Doly's **Proof of Technology** submission — the entry point to this pathway.
+
+---
+
 *Last updated: April 2026*

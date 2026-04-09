@@ -104,6 +104,37 @@ The prototype is considered successful if a judge can:
 
 ---
 
+## Data Sovereignty — A Hard Requirement
+
+Dentons' investment in **Noxtua** (the first sovereign AI in Europe — data never crosses jurisdictional borders) confirms that data sovereignty is a non-negotiable firm requirement, driven by GDPR, the EU AI Act, and client confidentiality obligations.
+
+Doly is built around this from day one:
+- **No client data is stored** — matters contain only titles, descriptions, and jurisdiction codes. No documents, no client PII, no privileged communications.
+- **No data crosses borders** — task routing is assignment logic only. Nothing replicates across regions.
+- **Attorney-client privilege fully protected** across all 80+ markets.
+- **Single-region database** — all data stays within one controlled environment.
+
+This is not a compliance footnote. It is a core architectural constraint.
+
+---
+
+## Adoption Pathway — Dentons Office Hours
+
+**Office Hours** is Dentons' own legal tech incubator, launched April 2025 by Dentons UKIME. It provides a formal adoption pathway for external technology into the firm:
+
+```
+Proof of Technology → Pilot → Commercial agreement (scalable globally)
+```
+
+Doly directly addresses **3 of Office Hours' 6 official focus areas:**
+- Knowledge management *(Context + Field Notes)*
+- Communication and collaboration *(Connect + gamification)*
+- Document lifecycle and matter management *(Flow + task routing)*
+
+The NUGIC Innovation Challenge prototype is Doly's **Proof of Technology** — the entry point to this pathway. A successful demo positions Doly for a formal Office Hours application.
+
+---
+
 ## Scope: What This Prototype Is (and Isn't)
 
 **In scope:**
