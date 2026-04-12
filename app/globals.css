@@ -3,16 +3,17 @@
 @tailwind utilities;
 
 :root {
-  --navy: #0F1923;
-  --navy-light: #1a2d3d;
-  --red: #CC0000;
-  --cream: #FBE5D6;
-  --cream-light: #fdf0e8;
+  --purple: #702082;
+  --purple-dark: #5a1a6a;
+  --purple-light: #8b35a0;
+  --white: #ffffff;
+  --grey: #D3D3D3;
+  --grey-bg: #f5f5f5;
 }
 
 body {
-  background-color: var(--navy);
-  color: #f1f5f9;
+  background-color: var(--grey-bg);
+  color: #1a1a1a;
 }
 
 @layer utilities {
