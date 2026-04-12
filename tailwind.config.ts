@@ -9,16 +9,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: {
-          DEFAULT: "#0F1923",
-          50: "#1a2d3d",
-          100: "#162433",
-          200: "#0F1923",
-          900: "#080f15",
-        },
         brand: {
-          red: "#CC0000",
-          cream: "#FBE5D6",
+          purple: "#702082",
+          "purple-dark": "#5a1a6a",
+          "purple-light": "#8b35a0",
+          white: "#ffffff",
+          grey: "#D3D3D3",
+          "grey-dark": "#a0a0a0",
+          "grey-bg": "#f5f5f5",
         },
       },
       fontFamily: {
