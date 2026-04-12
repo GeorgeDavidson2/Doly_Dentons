@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #0F1923;
+  --navy-light: #1a2d3d;
+  --red: #CC0000;
+  --cream: #FBE5D6;
+  --cream-light: #fdf0e8;
+}
+
+body {
+  background-color: var(--navy);
+  color: #f1f5f9;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
