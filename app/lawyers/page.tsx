@@ -1,8 +1,32 @@
-export default function LawyersPage() {
+import { createClient } from "@/lib/supabase/server";
+import Sidebar from "@/components/layout/Sidebar";
+import LawyersDirectory from "./_components/LawyersDirectory";
+import type { LawyerWithJurisdictions } from "@/components/lawyers/LawyerCard";
+
+export default async function LawyersPage() {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("lawyers")
+    .select(`
+      id, full_name, title, office_city, office_country,
+      languages, reputation_score, matters_count, avatar_url,
+      lawyer_jurisdictions(jurisdiction_code, jurisdiction_name, expertise_level)
+    `)
+    .order("reputation_score", { ascending: false });
+
+  if (error) {
+    console.error("Failed to load lawyers:", error.message);
+  }
+
+  const lawyers = (data ?? []) as unknown as LawyerWithJurisdictions[];
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold text-white">Lawyers</h1>
-      <p className="text-slate-400 mt-2">Coming soon — Phase 0</p>
+    <div className="flex min-h-screen bg-brand-grey-bg">
+      <Sidebar />
+      <main className="flex-1 p-8">
+        <LawyersDirectory lawyers={lawyers} />
+      </main>
     </div>
   );
 }
