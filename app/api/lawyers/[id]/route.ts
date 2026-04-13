@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export async function GET(
   _req: Request,
@@ -48,4 +48,119 @@ export async function GET(
     jurisdictions: jurisdictionsResult.data,
     reputation_events: eventsResult.data,
   });
+}
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const supabase = createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Ownership check by email — seed data IDs don't match auth UIDs
+  const { data: lawyer } = await supabase
+    .from("lawyers")
+    .select("id, email, timezone")
+    .eq("id", params.id)
+    .single();
+
+  if (!lawyer || lawyer.email !== user.email) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let body: {
+    bio?: string;
+    title?: string;
+    full_name?: string;
+    languages?: string[];
+    jurisdictions?: { jurisdiction_code: string; jurisdiction_name: string; expertise_level: number; matter_types: string[]; years_experience: number }[];
+    availability?: { day_of_week: number; work_start_hour: number; work_end_hour: number }[];
+  };
+
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const { bio, title, full_name, languages, jurisdictions, availability } = body;
+
+  // Use service client — ownership already verified above
+  const service = createServiceClient();
+
+  const { error: updateError } = await service
+    .from("lawyers")
+    .update({ bio, title, full_name, languages })
+    .eq("id", params.id);
+
+  if (updateError) {
+    return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
+  }
+
+  if (Array.isArray(jurisdictions)) {
+    const { error: deleteJurError } = await service
+      .from("lawyer_jurisdictions")
+      .delete()
+      .eq("lawyer_id", params.id);
+
+    if (deleteJurError) {
+      return NextResponse.json({ error: "Failed to update jurisdictions" }, { status: 500 });
+    }
+
+    if (jurisdictions.length > 0) {
+      const { error: insertJurError } = await service
+        .from("lawyer_jurisdictions")
+        .insert(
+          jurisdictions.map((j) => ({
+            lawyer_id: params.id,
+            jurisdiction_code: j.jurisdiction_code,
+            jurisdiction_name: j.jurisdiction_name,
+            expertise_level: j.expertise_level,
+            matter_types: j.matter_types,
+            years_experience: j.years_experience,
+          }))
+        );
+
+      if (insertJurError) {
+        return NextResponse.json({ error: "Failed to save jurisdictions" }, { status: 500 });
+      }
+    }
+  }
+
+  if (Array.isArray(availability)) {
+    const { error: deleteAvailError } = await service
+      .from("lawyer_availability")
+      .delete()
+      .eq("lawyer_id", params.id);
+
+    if (deleteAvailError) {
+      return NextResponse.json({ error: "Failed to update availability" }, { status: 500 });
+    }
+
+    if (availability.length > 0) {
+      const { error: insertAvailError } = await service
+        .from("lawyer_availability")
+        .insert(
+          availability.map((a) => ({
+            lawyer_id: params.id,
+            timezone: lawyer.timezone,
+            day_of_week: a.day_of_week,
+            work_start_hour: a.work_start_hour,
+            work_end_hour: a.work_end_hour,
+          }))
+        );
+
+      if (insertAvailError) {
+        return NextResponse.json({ error: "Failed to save availability" }, { status: 500 });
+      }
+    }
+  }
+
+  // TODO: Trigger embedding regeneration (issue #25)
+
+  return NextResponse.json({ success: true });
 }
