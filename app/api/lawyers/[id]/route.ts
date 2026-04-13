@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export async function GET(
   _req: Request,
@@ -48,4 +48,64 @@ export async function GET(
     jurisdictions: jurisdictionsResult.data,
     reputation_events: eventsResult.data,
   });
+}
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const supabase = createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Ownership check by email — seed data IDs don't match auth UIDs
+  const { data: lawyer } = await supabase
+    .from("lawyers")
+    .select("id, email, timezone")
+    .eq("id", params.id)
+    .single();
+
+  if (!lawyer || lawyer.email !== user.email) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await req.json();
+  const { bio, title, full_name, languages, jurisdictions, availability } = body;
+
+  // Use service client — ownership already verified above
+  const service = createServiceClient();
+
+  await service
+    .from("lawyers")
+    .update({ bio, title, full_name, languages })
+    .eq("id", params.id);
+
+  if (Array.isArray(jurisdictions)) {
+    await service.from("lawyer_jurisdictions").delete().eq("lawyer_id", params.id);
+    if (jurisdictions.length > 0) {
+      await service.from("lawyer_jurisdictions").insert(
+        jurisdictions.map((j: Record<string, unknown>) => ({ ...j, lawyer_id: params.id }))
+      );
+    }
+  }
+
+  if (Array.isArray(availability)) {
+    await service.from("lawyer_availability").delete().eq("lawyer_id", params.id);
+    if (availability.length > 0) {
+      await service.from("lawyer_availability").insert(
+        availability.map((a: Record<string, unknown>) => ({
+          ...a,
+          lawyer_id: params.id,
+          timezone: lawyer.timezone,
+        }))
+      );
+    }
+  }
+
+  // TODO: Trigger embedding regeneration (issue #25)
+
+  return NextResponse.json({ success: true });
 }
