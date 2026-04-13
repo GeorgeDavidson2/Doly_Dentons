@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, MapPin, Globe, Briefcase } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/layout/Sidebar";
@@ -29,15 +30,19 @@ export default async function LawyerProfilePage({ params }: { params: { id: stri
   const supabase = createClient();
 
   const [lawyerResult, jurisdictionsResult, eventsResult] = await Promise.all([
-    supabase.from("lawyers").select("*").eq("id", params.id).single(),
+    supabase
+      .from("lawyers")
+      .select("id, full_name, title, office_city, office_country, timezone, languages, bio, avatar_url, reputation_score, matters_count, contributions")
+      .eq("id", params.id)
+      .single(),
     supabase
       .from("lawyer_jurisdictions")
-      .select("*")
+      .select("id, jurisdiction_code, jurisdiction_name, expertise_level, matter_types, years_experience")
       .eq("lawyer_id", params.id)
       .order("expertise_level", { ascending: false }),
     supabase
       .from("reputation_events")
-      .select("*")
+      .select("id, event_type, points, description, created_at")
       .eq("lawyer_id", params.id)
       .order("created_at", { ascending: false })
       .limit(5),
@@ -45,9 +50,17 @@ export default async function LawyerProfilePage({ params }: { params: { id: stri
 
   if (lawyerResult.error || !lawyerResult.data) notFound();
 
+  if (jurisdictionsResult.error) {
+    throw new Error(`Failed to load jurisdictions: ${jurisdictionsResult.error.message}`);
+  }
+
+  if (eventsResult.error) {
+    throw new Error(`Failed to load reputation events: ${eventsResult.error.message}`);
+  }
+
   const lawyer = lawyerResult.data as Lawyer;
-  const jurisdictions = (jurisdictionsResult.data ?? []) as LawyerJurisdiction[];
-  const events = (eventsResult.data ?? []) as ReputationEvent[];
+  const jurisdictions = jurisdictionsResult.data as LawyerJurisdiction[];
+  const events = eventsResult.data as ReputationEvent[];
 
   return (
     <div className="flex min-h-screen bg-brand-grey-bg">
@@ -67,10 +80,12 @@ export default async function LawyerProfilePage({ params }: { params: { id: stri
           <div className="flex items-start gap-5">
             <div className="w-16 h-16 rounded-full bg-brand-purple/10 flex items-center justify-center flex-shrink-0">
               {lawyer.avatar_url ? (
-                <img
+                <Image
                   src={lawyer.avatar_url}
                   alt={lawyer.full_name}
-                  className="w-16 h-16 rounded-full object-cover"
+                  width={64}
+                  height={64}
+                  className="rounded-full object-cover"
                 />
               ) : (
                 <span className="text-brand-purple font-bold text-xl">

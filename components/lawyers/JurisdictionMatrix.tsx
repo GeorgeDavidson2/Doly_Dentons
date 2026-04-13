@@ -1,12 +1,13 @@
 import { Star } from "lucide-react";
 import type { LawyerJurisdiction } from "@/types";
 
+// Colour spec: grey=1–2, blue=3, gold=4–5
 const expertiseColors: Record<number, string> = {
   1: "bg-gray-100 text-gray-500 border-gray-200",
   2: "bg-gray-100 text-gray-600 border-gray-300",
   3: "bg-blue-50 text-blue-600 border-blue-200",
-  4: "bg-brand-purple/10 text-brand-purple border-brand-purple/20",
-  5: "bg-amber-50 text-amber-700 border-amber-200",
+  4: "bg-amber-50 text-amber-600 border-amber-200",
+  5: "bg-amber-50 text-amber-700 border-amber-300",
 };
 
 export default function JurisdictionMatrix({
