@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Lawyer, LawyerJurisdiction } from "@/types";
 
 export type LawyerWithJurisdictions = Pick<
@@ -31,10 +32,12 @@ export default function LawyerCard({ lawyer }: { lawyer: LawyerWithJurisdictions
       <div className="flex items-start gap-3 mb-4">
         <div className="w-10 h-10 rounded-full bg-brand-purple/10 flex items-center justify-center flex-shrink-0">
           {lawyer.avatar_url ? (
-            <img
+            <Image
               src={lawyer.avatar_url}
               alt={lawyer.full_name}
-              className="w-10 h-10 rounded-full object-cover"
+              width={40}
+              height={40}
+              className="rounded-full object-cover"
             />
           ) : (
             <span className="text-brand-purple font-semibold text-sm">

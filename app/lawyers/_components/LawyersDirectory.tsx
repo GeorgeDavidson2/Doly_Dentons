@@ -63,6 +63,7 @@ export default function LawyersDirectory({ lawyers }: { lawyers: LawyerWithJuris
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
+            aria-label="Search lawyers by name or office"
             placeholder="Search by name or office..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -71,6 +72,7 @@ export default function LawyersDirectory({ lawyers }: { lawyers: LawyerWithJuris
         </div>
 
         <select
+          aria-label="Filter by jurisdiction"
           value={selectedJurisdiction}
           onChange={(e) => setSelectedJurisdiction(e.target.value)}
           className="px-3 py-2 rounded-lg border border-brand-grey bg-white text-sm text-gray-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-colors"
@@ -82,6 +84,7 @@ export default function LawyersDirectory({ lawyers }: { lawyers: LawyerWithJuris
         </select>
 
         <select
+          aria-label="Filter by language"
           value={selectedLanguage}
           onChange={(e) => setSelectedLanguage(e.target.value)}
           className="px-3 py-2 rounded-lg border border-brand-grey bg-white text-sm text-gray-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-colors"
@@ -105,7 +108,7 @@ export default function LawyersDirectory({ lawyers }: { lawyers: LawyerWithJuris
       {/* Results */}
       {filtered.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-gray-400 text-sm">No lawyers match your filters.</p>
+          <p className="text-gray-400 text-sm">No lawyers match your search.</p>
           <button
             onClick={clearFilters}
             className="mt-2 text-brand-purple text-sm hover:underline"

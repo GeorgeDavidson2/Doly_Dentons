@@ -16,7 +16,7 @@ export default async function LawyersPage() {
     .order("reputation_score", { ascending: false });
 
   if (error) {
-    console.error("Failed to load lawyers:", error.message);
+    throw new Error(`Failed to load lawyers: ${error.message}`);
   }
 
   const lawyers = (data ?? []) as unknown as LawyerWithJurisdictions[];
