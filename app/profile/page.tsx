@@ -13,7 +13,7 @@ export default async function ProfilePage() {
   // Look up by email — seed data IDs don't match auth UIDs
   const { data: lawyer } = await supabase
     .from("lawyers")
-    .select("*")
+    .select("id, full_name, title, office_city, office_country, timezone, languages, bio, avatar_url, reputation_score, matters_count, contributions")
     .eq("email", user.email)
     .single();
 

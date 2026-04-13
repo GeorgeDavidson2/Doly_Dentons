@@ -120,11 +120,28 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
             .map(({ day_of_week, work_start_hour, work_end_hour }) => ({ day_of_week, work_start_hour, work_end_hour })),
         }),
       });
-      if (!res.ok) throw new Error();
+
+      if (res.status === 401 || res.redirected) {
+        throw new Error("Your session has expired. Please sign in again.");
+      }
+      if (res.status === 403) {
+        throw new Error("You do not have permission to update this profile.");
+      }
+
+      const contentType = res.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Unexpected server response. Please try again.");
+      }
+
+      const data = await res.json() as { success?: boolean; error?: string };
+      if (!res.ok || data.success !== true) {
+        throw new Error(data.error ?? "Failed to save. Please try again.");
+      }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch {
-      setError("Failed to save. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -382,44 +399,62 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
           Availability
         </h2>
         <div className="space-y-3">
-          {availability.map((day) => (
-            <div key={day.day_of_week} className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => updateAvailability(day.day_of_week, "enabled", !day.enabled)}
-                className={`w-10 text-left text-sm font-medium transition-colors flex-shrink-0 ${
-                  day.enabled ? "text-gray-700" : "text-gray-300"
-                }`}
-              >
-                {day.day_name.slice(0, 3)}
-              </button>
-              {day.enabled ? (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <select
-                    value={day.work_start_hour}
-                    onChange={(e) => updateAvailability(day.day_of_week, "work_start_hour", Number(e.target.value))}
-                    className="px-2 py-1 rounded border border-brand-grey text-xs focus:outline-none focus:border-brand-purple transition-colors"
-                  >
-                    {Array.from({ length: 13 }, (_, i) => i + 6).map((h) => (
-                      <option key={h} value={h}>{h}:00</option>
-                    ))}
-                  </select>
-                  <span className="text-gray-400 text-xs">to</span>
-                  <select
-                    value={day.work_end_hour}
-                    onChange={(e) => updateAvailability(day.day_of_week, "work_end_hour", Number(e.target.value))}
-                    className="px-2 py-1 rounded border border-brand-grey text-xs focus:outline-none focus:border-brand-purple transition-colors"
-                  >
-                    {Array.from({ length: 13 }, (_, i) => i + 12).map((h) => (
-                      <option key={h} value={h}>{h}:00</option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <span className="text-xs text-gray-300">Off</span>
-              )}
-            </div>
-          ))}
+          {availability.map((day) => {
+            const endHourOptions = Array.from({ length: 13 }, (_, i) => i + 12).filter(
+              (h) => h > day.work_start_hour
+            );
+            const safeEndHour = endHourOptions.includes(day.work_end_hour)
+              ? day.work_end_hour
+              : endHourOptions[0];
+
+            return (
+              <div key={day.day_of_week} className="flex items-center gap-4">
+                <button
+                  type="button"
+                  aria-pressed={day.enabled}
+                  onClick={() => updateAvailability(day.day_of_week, "enabled", !day.enabled)}
+                  className={`w-10 text-left text-sm font-medium transition-colors flex-shrink-0 ${
+                    day.enabled ? "text-gray-700" : "text-gray-300"
+                  }`}
+                >
+                  {day.day_name.slice(0, 3)}
+                </button>
+                {day.enabled ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <select
+                      aria-label={`${day.day_name} start time`}
+                      value={day.work_start_hour}
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        updateAvailability(day.day_of_week, "work_start_hour", next);
+                        if (day.work_end_hour <= next) {
+                          updateAvailability(day.day_of_week, "work_end_hour", next + 1);
+                        }
+                      }}
+                      className="px-2 py-1 rounded border border-brand-grey text-xs focus:outline-none focus:border-brand-purple transition-colors"
+                    >
+                      {Array.from({ length: 13 }, (_, i) => i + 6).map((h) => (
+                        <option key={h} value={h}>{h}:00</option>
+                      ))}
+                    </select>
+                    <span className="text-gray-400 text-xs">to</span>
+                    <select
+                      aria-label={`${day.day_name} end time`}
+                      value={safeEndHour}
+                      onChange={(e) => updateAvailability(day.day_of_week, "work_end_hour", Number(e.target.value))}
+                      className="px-2 py-1 rounded border border-brand-grey text-xs focus:outline-none focus:border-brand-purple transition-colors"
+                    >
+                      {endHourOptions.map((h) => (
+                        <option key={h} value={h}>{h}:00</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-300">Off</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
