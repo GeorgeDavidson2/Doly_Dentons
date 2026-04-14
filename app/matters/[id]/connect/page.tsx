@@ -1,10 +1,23 @@
-export default function ConnectPage() {
+import { notFound } from "next/navigation";
+import { getMatterDetail } from "../_lib/getMatter";
+import ConnectTab from "./_components/ConnectTab";
+
+export default async function ConnectPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const matter = await getMatterDetail(params.id);
+  if (!matter) notFound();
+
+  const teamLawyerIds = matter.matter_team
+    .map((m) => m.lawyer?.id)
+    .filter((id): id is string => !!id);
+
   return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <p className="text-sm font-medium text-gray-500">Lawyer matching</p>
-      <p className="text-xs text-gray-400 mt-1">
-        AI-ranked lawyer suggestions for each jurisdiction — coming in Phase 1
-      </p>
-    </div>
+    <ConnectTab
+      matterId={params.id}
+      teamLawyerIds={teamLawyerIds}
+    />
   );
 }
