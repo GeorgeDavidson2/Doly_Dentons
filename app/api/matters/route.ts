@@ -101,6 +101,15 @@ export async function POST(req: Request) {
   // POST /api/context/generate (issue #15). Not triggered here because
   // fire-and-forget is unreliable on Vercel Hobby (no waitUntil).
 
+  // Warm the Connect match cache non-blocking so the first Connect tab load is fast.
+  void fetch(new URL("/api/connect/match", req.url).toString(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie: req.headers.get("cookie") ?? "" },
+    body: JSON.stringify({ matter_id: matter.id }),
+  }).catch(() => {
+    // Best-effort — failure is non-critical
+  });
+
   return NextResponse.json(matter, { status: 201 });
 }
 
