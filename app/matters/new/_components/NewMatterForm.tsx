@@ -15,9 +15,12 @@ const MATTER_TYPES = [
   "Litigation",
 ];
 
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 const tomorrow = new Date();
 tomorrow.setDate(tomorrow.getDate() + 1);
-const MIN_DATE = tomorrow.toISOString().split("T")[0];
+const MIN_DATE = localDateStr(tomorrow);
 
 type FieldErrors = Partial<Record<"title" | "client_name" | "matter_type" | "jurisdictions" | "deadline", string>>;
 
@@ -80,7 +83,7 @@ export default function NewMatterForm() {
     if (!clientName.trim()) errs.client_name = "Client name is required";
     if (!matterType) errs.matter_type = "Select a matter type";
     if (selected.length === 0) errs.jurisdictions = "Select at least one jurisdiction";
-    if (deadline && new Date(deadline) <= new Date()) errs.deadline = "Deadline must be in the future";
+    if (deadline && deadline <= localDateStr(new Date())) errs.deadline = "Deadline must be in the future";
     return errs;
   }
 
@@ -107,6 +110,10 @@ export default function NewMatterForm() {
         }),
       });
 
+      if (res.redirected) {
+        router.push("/login");
+        return;
+      }
       const contentType = res.headers.get("content-type") ?? "";
       if (!contentType.includes("application/json")) {
         throw new Error("Unexpected server response");
@@ -232,6 +239,7 @@ export default function NewMatterForm() {
                     {j.flag} {j.code}
                     <button
                       type="button"
+                      aria-label={`Remove ${j.name}`}
                       onClick={(e) => { e.stopPropagation(); removeJurisdiction(j.code); }}
                       className="hover:text-brand-purple-dark ml-0.5"
                     >

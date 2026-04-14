@@ -24,6 +24,8 @@ const RAW: [string, string][] = [
   ["PA", "Panama"],
   ["CR", "Costa Rica"],
   ["DO", "Dominican Republic"],
+  // Supranational
+  ["EU", "European Union"],
   // Europe
   ["GB", "United Kingdom"],
   ["DE", "Germany"],
