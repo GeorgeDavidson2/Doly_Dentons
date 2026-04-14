@@ -12,15 +12,16 @@ async function getAuthenticatedLawyer() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user?.email) return null;
 
   const service = createServiceClient();
-  const { data: lawyer } = await service
+  const { data: lawyer, error } = await service
     .from("lawyers")
     .select("id, email")
     .eq("email", user.email)
-    .single();
+    .maybeSingle();
 
+  if (error) return null;
   return lawyer;
 }
 
@@ -49,14 +50,14 @@ export async function POST(req: Request) {
   const service = createServiceClient();
 
   // Verify team membership
-  const { data: membership } = await service
+  const { data: membership, error: membershipError } = await service
     .from("matter_team")
     .select("role")
     .eq("matter_id", matter_id)
     .eq("lawyer_id", lawyer.id)
-    .single();
+    .maybeSingle();
 
-  if (!membership) {
+  if (membershipError || !membership) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -81,10 +82,14 @@ export async function POST(req: Request) {
   }
 
   // Fetch existing briefs to determine what needs generation
-  const { data: existing } = await service
+  const { data: existing, error: existingError } = await service
     .from("context_briefs")
     .select("id, jurisdiction_code, status")
     .eq("matter_id", matter_id);
+
+  if (existingError) {
+    return NextResponse.json({ error: "Failed to check existing briefs" }, { status: 500 });
+  }
 
   const existingByCode = new Map(
     (existing ?? []).map((b) => [b.jurisdiction_code, b])
@@ -120,10 +125,11 @@ export async function POST(req: Request) {
 
     prepOps.push(
       (async () => {
-        await service
+        const { error } = await service
           .from("context_briefs")
           .update({ status: "generating", legal_landscape: null, cultural_intelligence: null, regulatory_notes: null })
           .in("id", updateIds);
+        if (error) throw new Error(`Failed to reset errored briefs: ${error.message}`);
       })()
     );
   }
@@ -131,7 +137,7 @@ export async function POST(req: Request) {
   if (toInsert.length > 0) {
     prepOps.push(
       (async () => {
-        await service.from("context_briefs").insert(
+        const { error } = await service.from("context_briefs").insert(
           toInsert.map((j) => ({
             matter_id,
             jurisdiction_code: j.jurisdiction_code,
@@ -139,14 +145,22 @@ export async function POST(req: Request) {
             status: "generating",
           }))
         );
+        if (error) throw new Error(`Failed to create brief stubs: ${error.message}`);
       })()
     );
   }
 
-  await Promise.all(prepOps);
+  try {
+    await Promise.all(prepOps);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to initialise briefs" },
+      { status: 500 }
+    );
+  }
 
   // Re-fetch brief IDs so we can update by id after generation
-  const { data: freshStubs } = await service
+  const { data: freshStubs, error: stubsError } = await service
     .from("context_briefs")
     .select("id, jurisdiction_code")
     .eq("matter_id", matter_id)
@@ -155,9 +169,18 @@ export async function POST(req: Request) {
       toGenerate.map((j) => j.jurisdiction_code)
     );
 
+  if (stubsError) {
+    return NextResponse.json({ error: "Failed to retrieve brief IDs" }, { status: 500 });
+  }
+
   const briefIdByCode = new Map(
     (freshStubs ?? []).map((b) => [b.jurisdiction_code, b.id])
   );
+
+  const missingIds = toGenerate.filter((j) => !briefIdByCode.has(j.jurisdiction_code));
+  if (missingIds.length > 0) {
+    return NextResponse.json({ error: "Brief IDs missing after insert" }, { status: 500 });
+  }
 
   // Run all Groq calls in parallel
   const genResults = await Promise.allSettled(
@@ -179,7 +202,7 @@ export async function POST(req: Request) {
       if (!briefId) return;
 
       if (result.status === "fulfilled") {
-        await service
+        const { error } = await service
           .from("context_briefs")
           .update({
             status: "ready",
@@ -188,11 +211,13 @@ export async function POST(req: Request) {
             regulatory_notes: result.value.content.regulatory_notes,
           })
           .eq("id", briefId);
+        if (error) throw new Error(`DB update failed for brief ${briefId}: ${error.message}`);
       } else {
-        await service
+        const { error } = await service
           .from("context_briefs")
           .update({ status: "error" })
           .eq("id", briefId);
+        if (error) throw new Error(`DB error-mark failed for brief ${briefId}: ${error.message}`);
       }
     })
   );
