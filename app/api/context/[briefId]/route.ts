@@ -6,15 +6,16 @@ async function getAuthenticatedLawyer() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user?.email) return null;
 
   const service = createServiceClient();
-  const { data: lawyer } = await service
+  const { data: lawyer, error } = await service
     .from("lawyers")
     .select("id, email")
     .eq("email", user.email)
-    .single();
+    .maybeSingle();
 
+  if (error) return null;
   return lawyer;
 }
 
@@ -27,35 +28,40 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Single service client reused for both queries
   const service = createServiceClient();
 
-  // Fetch the brief (need matter_id to check membership)
+  // Fetch brief — select matter_id for auth check but exclude it from response
   const { data: brief, error: briefError } = await service
     .from("context_briefs")
     .select("id, matter_id, jurisdiction_code, jurisdiction_name, status, legal_landscape, cultural_intelligence, regulatory_notes, created_at")
     .eq("id", params.briefId)
-    .single();
+    .maybeSingle();
 
   if (briefError || !brief) {
     return NextResponse.json({ error: "Brief not found" }, { status: 404 });
   }
 
   // Verify the requesting lawyer is on the matter team
-  const { data: membership } = await service
+  const { data: membership, error: membershipError } = await service
     .from("matter_team")
     .select("role")
     .eq("matter_id", brief.matter_id)
     .eq("lawyer_id", lawyer.id)
-    .single();
+    .maybeSingle();
 
-  if (!membership) {
+  if (membershipError || !membership) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(brief, {
+  // Strip internal field from response
+  const { matter_id: _omit, ...responseBody } = brief;
+
+  return NextResponse.json(responseBody, {
     headers: {
-      // Polling endpoint — never serve stale data from cache
-      "Cache-Control": "no-store",
+      // Cache ready briefs for 1 hour; always fetch live for generating/error states
+      "Cache-Control":
+        brief.status === "ready" ? "public, max-age=3600" : "no-store",
     },
   });
 }
