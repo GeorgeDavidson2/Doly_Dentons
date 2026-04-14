@@ -13,22 +13,24 @@ const createMatterSchema = z.object({
     .refine((s) => !isNaN(Date.parse(s)), { message: "Invalid deadline date" })
     .optional(),
   jurisdiction_codes: z
-    .array(z.string().min(2).max(10))
-    .min(1, "At least one jurisdiction is required"),
+    .array(z.string().min(2).max(10).transform((s) => s.trim().toUpperCase()))
+    .min(1, "At least one jurisdiction is required")
+    .transform((arr) => Array.from(new Set(arr))),
 });
 
 async function getAuthenticatedLawyer() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user?.email) return null;
 
   const service = createServiceClient();
-  const { data: lawyer } = await service
+  const { data: lawyer, error } = await service
     .from("lawyers")
     .select("id, email")
     .eq("email", user.email)
-    .single();
+    .maybeSingle();
 
+  if (error) return null;
   return lawyer;
 }
 

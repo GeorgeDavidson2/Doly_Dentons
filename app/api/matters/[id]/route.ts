@@ -13,26 +13,29 @@ const patchMatterSchema = z.object({
 async function getAuthenticatedLawyer() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user?.email) return null;
 
   const service = createServiceClient();
-  const { data: lawyer } = await service
+  const { data: lawyer, error } = await service
     .from("lawyers")
     .select("id, email")
     .eq("email", user.email)
-    .single();
+    .maybeSingle();
 
+  if (error) return null;
   return lawyer;
 }
 
 async function checkTeamMembership(matterId: string, lawyerId: string) {
   const service = createServiceClient();
-  const { data } = await service
+  const { data, error } = await service
     .from("matter_team")
     .select("role")
     .eq("matter_id", matterId)
     .eq("lawyer_id", lawyerId)
-    .single();
+    .maybeSingle();
+
+  if (error) return null;
   return data;
 }
 
@@ -99,6 +102,10 @@ export async function PATCH(
       { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
       { status: 400 }
     );
+  }
+
+  if (Object.keys(parsed.data).length === 0) {
+    return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
   const service = createServiceClient();

@@ -27,5 +27,6 @@ const JURISDICTION_NAMES: Record<string, string> = {
 };
 
 export function getJurisdictionName(code: string): string {
-  return JURISDICTION_NAMES[code.toUpperCase()] ?? code;
+  const normalized = code.trim().toUpperCase();
+  return JURISDICTION_NAMES[normalized] ?? normalized;
 }
