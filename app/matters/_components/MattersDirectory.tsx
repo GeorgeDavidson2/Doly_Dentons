@@ -86,7 +86,7 @@ function MatterCard({ matter }: { matter: MatterSummary }) {
           ))}
           {overflow > 0 && (
             <span className="text-[11px] px-2 py-0.5 text-gray-400 rounded-full border border-gray-200">
-              +{overflow}
+              +{overflow} more
             </span>
           )}
         </div>
@@ -206,8 +206,10 @@ export default function MattersDirectory({ matters }: { matters: MatterSummary[]
                 Create your first matter
               </Link>
             </>
-          ) : (
+          ) : search.trim() ? (
             <p className="text-gray-400 text-sm">No matters match your search.</p>
+          ) : (
+            <p className="text-gray-400 text-sm">No {activeTab} matters.</p>
           )}
         </div>
       ) : (
