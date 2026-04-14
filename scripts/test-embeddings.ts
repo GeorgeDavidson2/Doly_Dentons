@@ -83,13 +83,16 @@ async function main() {
   console.log(`Embeddings generated in ${Date.now() - start}ms\n`);
 
   // Dimension check
-  console.assert(vecIsabella.length === 384, `Expected 384 dims, got ${vecIsabella.length}`);
+  if (vecIsabella.length !== 384) {
+    throw new Error(`Expected 384 dims, got ${vecIsabella.length}`);
+  }
   console.log(`✓ Dimension: ${vecIsabella.length} (expected 384)`);
 
   // Determinism check
   const vecIsabella2 = await embedText(isabellaText);
   const identical = vecIsabella.every((v, i) => v === vecIsabella2[i]);
-  console.log(`✓ Deterministic: ${identical ? "yes" : "NO — mismatch!"}`);
+  if (!identical) throw new Error("Embeddings are not deterministic");
+  console.log(`✓ Deterministic: yes`);
 
   // Similarity check
   const simIsabellaRodrigo = cosineSimilarity(vecIsabella, vecRodrigo);

@@ -91,11 +91,7 @@ export default function LawyerMatchCard({ match, matterId, alreadyOnTeam }: Prop
       const res = await fetch(`/api/matters/${matterId}/team`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lawyer_id: match.id,
-          role: "collaborator",
-          match_score: match.score,
-        }),
+        body: JSON.stringify({ lawyer_id: match.id, role: "collaborator" }),
       });
       if (res.ok) {
         setInvited(true);

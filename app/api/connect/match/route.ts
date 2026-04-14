@@ -9,8 +9,18 @@ const schema = z.object({
 
 // Module-level cache: matter_id → { results, expiresAt }
 // Persists across requests within the same serverless instance (~10 min TTL).
+// Expired entries are evicted on each write to prevent unbounded growth.
 const matchCache = new Map<string, { results: EnrichedMatch[]; expiresAt: number }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
+
+function setCacheEntry(matterId: string, results: EnrichedMatch[]) {
+  const now = Date.now();
+  // Evict all expired entries before writing
+  matchCache.forEach((entry, key) => {
+    if (now >= entry.expiresAt) matchCache.delete(key);
+  });
+  matchCache.set(matterId, { results, expiresAt: now + CACHE_TTL_MS });
+}
 
 export type EnrichedMatch = MatchResult & {
   expertise_levels: Record<string, number>; // jurisdiction_code → expertise_level
@@ -67,7 +77,7 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   if (!membership) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Return cached results if still fresh
@@ -91,7 +101,7 @@ export async function POST(req: Request) {
   const filtered = matches.filter((m) => m.id !== lawyer.id);
 
   if (filtered.length === 0) {
-    matchCache.set(matter_id, { results: [], expiresAt: Date.now() + CACHE_TTL_MS });
+    setCacheEntry(matter_id, []);
     return NextResponse.json([]);
   }
 
@@ -121,7 +131,7 @@ export async function POST(req: Request) {
     expertise_levels: expertiseLookup.get(m.id) ?? {},
   }));
 
-  matchCache.set(matter_id, { results: enriched, expiresAt: Date.now() + CACHE_TTL_MS });
+  setCacheEntry(matter_id, enriched);
 
   return NextResponse.json(enriched);
 }

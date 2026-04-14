@@ -2,17 +2,23 @@ import "server-only";
 import { pipeline } from "@xenova/transformers";
 import { getJurisdictionName } from "@/lib/jurisdictions";
 
-// Singleton — model loads once per server instance (~3-5s first load, ~23MB)
-let embedder: Awaited<ReturnType<typeof pipeline>> | null = null;
+// Singleton — model loads once per server instance (~3-5s first load, ~23MB).
+// Caches the in-flight Promise so concurrent calls await the same load
+// rather than each triggering a redundant pipeline() call.
+let embedderPromise: Promise<Awaited<ReturnType<typeof pipeline>>> | null = null;
 
-async function getEmbedder() {
-  if (!embedder) {
-    embedder = await pipeline(
+function getEmbedder() {
+  if (!embedderPromise) {
+    embedderPromise = pipeline(
       "feature-extraction",
       "Xenova/all-MiniLM-L6-v2"
-    );
+    ).catch((err) => {
+      // Reset on failure so the next call retries
+      embedderPromise = null;
+      throw err;
+    });
   }
-  return embedder;
+  return embedderPromise;
 }
 
 /** Convert any text to a 384-dimension unit vector. */

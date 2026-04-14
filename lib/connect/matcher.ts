@@ -180,7 +180,7 @@ export async function matchLawyersForMatter(matterId: string): Promise<MatchResu
     const reputationBoost = getReputationDecile(c.reputation_score) * REPUTATION_WEIGHT;
 
     const raw = c.similarity + jurisdictionBoost + languageBoost + reputationBoost;
-    const score = Math.min(1.0, raw);
+    const score = Math.max(0, Math.min(1.0, raw));
 
     return {
       id: c.id,

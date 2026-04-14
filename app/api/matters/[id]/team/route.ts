@@ -5,7 +5,9 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 const addMemberSchema = z.object({
   lawyer_id: z.string().uuid(),
   role: z.enum(["collaborator", "reviewer"]).default("collaborator"),
-  match_score: z.number().min(0).max(1).optional(),
+  // match_score is intentionally excluded from the client payload —
+  // trusting the client to supply it would allow arbitrary score injection.
+  // The score is stored as null here; issue #25 will populate it server-side.
 });
 
 const INVITER_POINTS = 20;
@@ -40,7 +42,7 @@ export async function GET(
 
   const service = createServiceClient();
 
-  // Verify membership
+  // Verify membership — 403 (not 404) so callers know the matter exists but they lack access
   const { data: membership } = await service
     .from("matter_team")
     .select("role")
@@ -49,7 +51,7 @@ export async function GET(
     .maybeSingle();
 
   if (!membership) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { data: team, error } = await service
@@ -91,7 +93,7 @@ export async function POST(
     );
   }
 
-  const { lawyer_id, role, match_score } = parsed.data;
+  const { lawyer_id, role } = parsed.data;
 
   // Cannot invite yourself
   if (lawyer_id === lawyer.id) {
@@ -112,7 +114,7 @@ export async function POST(
     .maybeSingle();
 
   if (!membership) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Verify invited lawyer exists
@@ -141,15 +143,10 @@ export async function POST(
     );
   }
 
-  // Add to team
+  // Add to team (match_score stored as null — populated server-side in issue #25)
   const { data: newMember, error: insertError } = await service
     .from("matter_team")
-    .insert({
-      matter_id: params.id,
-      lawyer_id,
-      role,
-      match_score: match_score ?? null,
-    })
+    .insert({ matter_id: params.id, lawyer_id, role, match_score: null })
     .select("id, matter_id, lawyer_id, role, match_score, joined_at")
     .single();
 
@@ -158,37 +155,51 @@ export async function POST(
   }
 
   // Fetch inviter's current score for the increment
-  const { data: inviter } = await service
+  const { data: inviter, error: inviterError } = await service
     .from("lawyers")
     .select("reputation_score")
     .eq("id", lawyer.id)
     .single();
 
-  // Award reputation — all four ops in parallel
-  await Promise.allSettled([
+  if (inviterError || !inviter) {
+    // Team member was added — log and continue rather than failing the request
+    console.error("Failed to fetch inviter reputation score:", inviterError?.message);
+    return NextResponse.json(newMember, { status: 201 });
+  }
+
+  // Award reputation — fail fast with Promise.all so errors surface
+  const [evInviter, evInvitee, repInviter, repInvitee] = await Promise.all([
     service.from("reputation_events").insert({
       lawyer_id: lawyer.id,
       event_type: "match_accepted",
       points: INVITER_POINTS,
       matter_id: params.id,
-      description: `Invited a lawyer to the matter team`,
+      description: "Invited a lawyer to the matter team",
     }),
     service.from("reputation_events").insert({
       lawyer_id,
       event_type: "matter_joined",
       points: INVITEE_POINTS,
       matter_id: params.id,
-      description: `Joined matter team`,
+      description: "Joined matter team",
     }),
     service
       .from("lawyers")
-      .update({ reputation_score: (inviter?.reputation_score ?? 0) + INVITER_POINTS })
+      .update({ reputation_score: inviter.reputation_score + INVITER_POINTS })
       .eq("id", lawyer.id),
     service
       .from("lawyers")
       .update({ reputation_score: invitee.reputation_score + INVITEE_POINTS })
       .eq("id", lawyer_id),
   ]);
+
+  // Log any reputation errors — team membership is already committed
+  const repErrors = [evInviter, evInvitee, repInviter, repInvitee]
+    .map((r) => r.error)
+    .filter(Boolean);
+  if (repErrors.length > 0) {
+    console.error("Reputation award errors:", repErrors.map((e) => e!.message));
+  }
 
   return NextResponse.json(newMember, { status: 201 });
 }
