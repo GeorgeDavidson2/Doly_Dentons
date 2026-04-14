@@ -160,7 +160,13 @@ export async function PATCH(
     }
   }
 
-  // TODO: Trigger embedding regeneration (issue #25)
+  // Regenerate embedding non-blocking — don't make the profile save wait for it
+  void fetch(new URL(`/api/lawyers/${params.id}/embed`, req.url).toString(), {
+    method: "POST",
+    headers: { cookie: req.headers.get("cookie") ?? "" },
+  }).catch((err) => {
+    console.error("Failed to regenerate lawyer embedding", { lawyerId: params.id, err });
+  });
 
   return NextResponse.json({ success: true });
 }
