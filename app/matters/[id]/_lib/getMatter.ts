@@ -46,26 +46,27 @@ export const getMatterDetail = cache(async (id: string): Promise<MatterDetail | 
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  if (!user.email) return null;
   const service = createServiceClient();
 
-  const { data: lawyer } = await service
+  const { data: lawyer, error: lawyerError } = await service
     .from("lawyers")
     .select("id")
     .eq("email", user.email)
-    .single();
+    .maybeSingle();
 
-  if (!lawyer) return null;
+  if (lawyerError || !lawyer) return null;
 
-  const { data: membership } = await service
+  const { data: membership, error: membershipError } = await service
     .from("matter_team")
     .select("role")
     .eq("matter_id", id)
     .eq("lawyer_id", lawyer.id)
-    .single();
+    .maybeSingle();
 
-  if (!membership) return null;
+  if (membershipError || !membership) return null;
 
-  const { data: matter } = await service
+  const { data: matter, error: matterError } = await service
     .from("matters")
     .select(`
       id, title, description, client_name, matter_type, status, deadline, created_at,
@@ -77,7 +78,8 @@ export const getMatterDetail = cache(async (id: string): Promise<MatterDetail | 
       context_briefs(id, jurisdiction_code, jurisdiction_name, status)
     `)
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
+  if (matterError) return null;
   return matter as unknown as MatterDetail | null;
 });

@@ -4,12 +4,13 @@ import Link from "next/link";
 import { getMatterDetail, type MatterDetail } from "../_lib/getMatter";
 
 function Initials({ name }: { name: string }) {
-  const parts = name.trim().split(" ");
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return <>?</>;
   return (
     <>
       {parts.length >= 2
         ? `${parts[0][0]}${parts[parts.length - 1][0]}`
-        : name[0]}
+        : parts[0][0]}
     </>
   );
 }
