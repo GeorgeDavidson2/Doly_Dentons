@@ -1,10 +1,36 @@
-export default function ContextPage() {
+import { notFound } from "next/navigation";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getMatterDetail } from "../_lib/getMatter";
+import ContextTab from "./_components/ContextTab";
+import type { Brief } from "./_components/BriefCard";
+
+export default async function ContextPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  // getMatterDetail is React-cached — deduplicates with the layout's call
+  const matter = await getMatterDetail(params.id);
+  if (!matter) notFound();
+
+  // Fetch full brief content (getMatterDetail only returns brief status)
+  const service = createServiceClient();
+  const { data: briefs } = await service
+    .from("context_briefs")
+    .select(
+      "id, jurisdiction_code, jurisdiction_name, status, legal_landscape, cultural_intelligence, regulatory_notes"
+    )
+    .eq("matter_id", params.id)
+    .order("jurisdiction_code");
+
   return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <p className="text-sm font-medium text-gray-500">Context briefs</p>
-      <p className="text-xs text-gray-400 mt-1">
-        AI-generated jurisdiction intelligence — coming in Phase 1
-      </p>
-    </div>
+    <ContextTab
+      matterId={params.id}
+      initialBriefs={(briefs ?? []) as Brief[]}
+      jurisdictions={matter.matter_jurisdictions.map((j) => ({
+        jurisdiction_code: j.jurisdiction_code,
+        jurisdiction_name: j.jurisdiction_name,
+      }))}
+    />
   );
 }
