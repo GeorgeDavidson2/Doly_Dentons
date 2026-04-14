@@ -164,8 +164,8 @@ export async function PATCH(
   void fetch(new URL(`/api/lawyers/${params.id}/embed`, req.url).toString(), {
     method: "POST",
     headers: { cookie: req.headers.get("cookie") ?? "" },
-  }).catch(() => {
-    // Best-effort — failure is non-critical; embed-lawyers script can re-sync
+  }).catch((err) => {
+    console.error("Failed to regenerate lawyer embedding", { lawyerId: params.id, err });
   });
 
   return NextResponse.json({ success: true });

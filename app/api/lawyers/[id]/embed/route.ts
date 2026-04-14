@@ -24,7 +24,17 @@ export async function POST(
     .eq("id", params.id)
     .maybeSingle();
 
-  if (lawyerError || !lawyer) {
+  if (lawyerError) {
+    const isInvalidUuid =
+      lawyerError.code === "22P02" ||
+      lawyerError.message?.toLowerCase().includes("invalid input syntax for type uuid");
+    return NextResponse.json(
+      { error: isInvalidUuid ? "Invalid lawyer id" : "Failed to load lawyer" },
+      { status: isInvalidUuid ? 400 : 500 }
+    );
+  }
+
+  if (!lawyer) {
     return NextResponse.json({ error: "Lawyer not found" }, { status: 404 });
   }
 
@@ -57,6 +67,13 @@ export async function POST(
   });
 
   const embedding = await embedText(profileText);
+
+  if (embedding.length !== 384 || !embedding.every(Number.isFinite)) {
+    return NextResponse.json(
+      { error: "Embedding generation produced an invalid vector" },
+      { status: 500 }
+    );
+  }
 
   const { error: updateError } = await service
     .from("lawyers")
