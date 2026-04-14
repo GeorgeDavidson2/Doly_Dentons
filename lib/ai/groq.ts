@@ -1,13 +1,19 @@
+import "server-only";
 import Groq from "groq-sdk";
 
 const MODEL = "llama-3.3-70b-versatile";
 
+// Module-level singleton — avoids re-initialising the SDK on every parallel call
+let _client: Groq | null = null;
 function getClient(): Groq {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    throw new Error("GROQ_API_KEY is not set");
+  if (!_client) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      throw new Error("GROQ_API_KEY is not set");
+    }
+    _client = new Groq({ apiKey });
   }
-  return new Groq({ apiKey });
+  return _client;
 }
 
 export interface BriefContent {
@@ -47,26 +53,32 @@ Return a JSON object with exactly these three fields:
 Be specific and practical. Prioritise information a senior lawyer would need before engaging in ${jurisdictionName}.`;
 }
 
+const REQUIRED_FIELDS = ["legal_landscape", "cultural_intelligence", "regulatory_notes"] as const;
+
 function parseBriefResponse(raw: string): BriefContent {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error(`Groq returned non-JSON content: ${raw.slice(0, 200)}`);
+    // Don't include raw content in error — may contain confidential matter descriptions
+    throw new Error("Groq returned non-JSON content");
   }
+
+  const obj = parsed as Record<string, unknown>;
+  const missing = REQUIRED_FIELDS.filter((k) => typeof obj[k] !== "string");
 
   if (
     typeof parsed !== "object" ||
     parsed === null ||
-    typeof (parsed as Record<string, unknown>).legal_landscape !== "string" ||
-    typeof (parsed as Record<string, unknown>).cultural_intelligence !== "string" ||
-    typeof (parsed as Record<string, unknown>).regulatory_notes !== "string"
+    missing.length > 0
   ) {
-    throw new Error("Groq response is missing required brief fields");
+    throw new Error(
+      `Groq response is missing required fields: ${missing.join(", ")}. Got keys: ${Object.keys(obj).join(", ")}`
+    );
   }
 
   const { legal_landscape, cultural_intelligence, regulatory_notes } =
-    parsed as Record<string, string>;
+    obj as Record<string, string>;
 
   return { legal_landscape, cultural_intelligence, regulatory_notes };
 }
