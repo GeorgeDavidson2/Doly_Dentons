@@ -15,13 +15,17 @@ export default async function ContextPage({
 
   // Fetch full brief content (getMatterDetail only returns brief status)
   const service = createServiceClient();
-  const { data: briefs } = await service
+  const { data: briefs, error: briefsError } = await service
     .from("context_briefs")
     .select(
       "id, jurisdiction_code, jurisdiction_name, status, legal_landscape, cultural_intelligence, regulatory_notes"
     )
     .eq("matter_id", params.id)
     .order("jurisdiction_code");
+
+  if (briefsError) {
+    throw new Error(`Failed to load briefs: ${briefsError.message}`);
+  }
 
   return (
     <ContextTab

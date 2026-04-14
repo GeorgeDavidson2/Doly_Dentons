@@ -25,11 +25,13 @@ const SECTIONS: { key: keyof Brief; label: string; color: string }[] = [
 ];
 
 function Section({
+  sectionId,
   label,
   color,
   content,
   defaultOpen,
 }: {
+  sectionId: string;
   label: string;
   color: string;
   content: string;
@@ -41,6 +43,8 @@ function Section({
     <div className={`border-l-2 ${color} pl-4`}>
       <button
         type="button"
+        aria-expanded={open}
+        aria-controls={sectionId}
         onClick={() => setOpen((v) => !v)}
         className="flex items-center justify-between w-full text-left"
       >
@@ -53,11 +57,11 @@ function Section({
           <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
         )}
       </button>
-      {open && (
+      <div id={sectionId} hidden={!open}>
         <p className="mt-2 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
           {content}
         </p>
-      )}
+      </div>
     </div>
   );
 }
@@ -92,6 +96,7 @@ export default function BriefCard({ brief }: { brief: Brief }) {
         return (
           <Section
             key={s.key}
+            sectionId={`brief-${brief.id}-${s.key}`}
             label={s.label}
             color={s.color}
             content={content}
