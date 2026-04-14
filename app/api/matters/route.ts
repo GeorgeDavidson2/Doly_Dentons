@@ -97,10 +97,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to add creator to team" }, { status: 500 });
   }
 
-  // TODO: Trigger context generation — issue #15
-  // fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/context/generate`, {
-  //   method: "POST", body: JSON.stringify({ matter_id: matter.id })
-  // })
+  // Context briefs are generated on demand from the Context tab UI via
+  // POST /api/context/generate (issue #15). Not triggered here because
+  // fire-and-forget is unreliable on Vercel Hobby (no waitUntil).
 
   return NextResponse.json(matter, { status: 201 });
 }
