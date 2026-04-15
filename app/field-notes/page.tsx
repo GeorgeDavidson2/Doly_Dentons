@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ChevronUp, Plus, Search } from "lucide-react";
 import Link from "next/link";
@@ -38,7 +38,7 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", { month: "short", day: "numeric" });
 }
 
-export default function FieldNotesPage() {
+function FieldNotesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -207,5 +207,17 @@ export default function FieldNotesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function FieldNotesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-6 h-6 animate-spin text-brand-purple" />
+      </div>
+    }>
+      <FieldNotesContent />
+    </Suspense>
   );
 }
