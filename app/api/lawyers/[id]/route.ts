@@ -1,5 +1,25 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+
+const patchLawyerSchema = z.object({
+  bio:       z.string().max(2000).optional(),
+  title:     z.string().max(100).optional(),
+  full_name: z.string().min(1).max(200).optional(),
+  languages: z.array(z.string().max(50)).max(20).optional(),
+  jurisdictions: z.array(z.object({
+    jurisdiction_code: z.string().min(2).max(10),
+    jurisdiction_name: z.string().min(1).max(100),
+    expertise_level:   z.number().int().min(1).max(5),
+    matter_types:      z.array(z.string().max(50)).max(20),
+    years_experience:  z.number().int().min(0).max(60),
+  })).max(20).optional(),
+  availability: z.array(z.object({
+    day_of_week:      z.number().int().min(0).max(6),
+    work_start_hour:  z.number().int().min(0).max(23),
+    work_end_hour:    z.number().int().min(1).max(24),
+  })).max(7).optional(),
+});
 
 export async function GET(
   _req: Request,
@@ -72,22 +92,22 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  let body: {
-    bio?: string;
-    title?: string;
-    full_name?: string;
-    languages?: string[];
-    jurisdictions?: { jurisdiction_code: string; jurisdiction_name: string; expertise_level: number; matter_types: string[]; years_experience: number }[];
-    availability?: { day_of_week: number; work_start_hour: number; work_end_hour: number }[];
-  };
-
+  let rawBody: unknown;
   try {
-    body = await req.json();
+    rawBody = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { bio, title, full_name, languages, jurisdictions, availability } = body;
+  const parsed = patchLawyerSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  const { bio, title, full_name, languages, jurisdictions, availability } = parsed.data;
 
   // Use service client — ownership already verified above
   const service = createServiceClient();
