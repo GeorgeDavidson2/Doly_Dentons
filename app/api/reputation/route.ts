@@ -32,7 +32,7 @@ export async function GET(request: Request) {
         .single(),
       supabase
         .from("reputation_events")
-        .select("id, event_type, points, description, matter_id, created_at")
+        .select("id, event_type, points, created_at")
         .eq("lawyer_id", lawyerId)
         .order("created_at", { ascending: false })
         .limit(50),
