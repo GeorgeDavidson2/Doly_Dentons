@@ -30,6 +30,26 @@ CREATE UNIQUE INDEX IF NOT EXISTS reputation_events_profile_completed_once
   WHERE event_type = 'profile_completed';
 
 -- ── brief_generated: one-time per (lawyer, matter) ───────────────────────────
+WITH deleted_brief_generated AS (
+  DELETE FROM reputation_events
+  WHERE id NOT IN (
+    SELECT DISTINCT ON (lawyer_id, matter_id) id
+    FROM reputation_events
+    WHERE event_type = 'brief_generated'
+    ORDER BY lawyer_id, matter_id, created_at ASC
+  )
+  AND event_type = 'brief_generated'
+  RETURNING lawyer_id, points
+),
+deleted_brief_points_by_lawyer AS (
+  SELECT lawyer_id, COALESCE(SUM(points), 0) AS deleted_points
+  FROM deleted_brief_generated
+  GROUP BY lawyer_id
+)
+UPDATE lawyers l
+SET reputation_score = l.reputation_score - d.deleted_points
+FROM deleted_brief_points_by_lawyer d
+WHERE l.id = d.lawyer_id;
 CREATE UNIQUE INDEX IF NOT EXISTS reputation_events_brief_generated_once
   ON reputation_events (lawyer_id, matter_id)
   WHERE event_type = 'brief_generated';
