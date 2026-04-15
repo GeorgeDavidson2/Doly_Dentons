@@ -1,3 +1,4 @@
+import "server-only";
 import { createServiceClient } from "@/lib/supabase/server";
 
 // ─── Point values ────────────────────────────────────────────────────────────
@@ -53,8 +54,10 @@ interface AwardOptions {
  *   the lawyer row and enforces the per-note cap atomically.
  * - All other events: delegates to award_reputation_event RPC, which inserts
  *   the event row and increments the score in one transaction.
- *   profile_completed and brief_generated have DB unique indexes; a 23505
- *   conflict means already awarded and is treated as a silent skip.
+ *   Events backed by a DB unique index (profile_completed: unique on lawyer_id;
+ *   brief_generated: unique on (lawyer_id, matter_id)) will produce a 23505
+ *   conflict on duplicate inserts, which is treated as a silent skip.
+ *   Any event without a DB constraint must not rely on 23505 for idempotency.
  *
  * Returns points awarded, or null if skipped or failed.
  */

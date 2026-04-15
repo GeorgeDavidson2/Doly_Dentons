@@ -1,27 +1,28 @@
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { getBadge } from "@/lib/reputation/awards";
 
 // GET /api/reputation?lawyer_id=xxx   — single lawyer events + badge
 // GET /api/reputation                 — firm-wide leaderboard (top 20)
 export async function GET(request: Request) {
+  // Use the user-scoped client for all reads — RLS allows authenticated users
+  // to read lawyers and reputation_events firm-wide (read-only).
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const service = createServiceClient();
   const { searchParams } = new URL(request.url);
   const lawyerId = searchParams.get("lawyer_id");
 
   if (lawyerId) {
-    // Single lawyer: recent events + score + badge
+    // Single lawyer: score + badge + recent events
     const [lawyerResult, eventsResult] = await Promise.all([
-      service
+      supabase
         .from("lawyers")
         .select("id, full_name, office_city, reputation_score, avatar_url")
         .eq("id", lawyerId)
         .single(),
-      service
+      supabase
         .from("reputation_events")
         .select("id, event_type, points, description, matter_id, created_at")
         .eq("lawyer_id", lawyerId)
@@ -49,8 +50,8 @@ export async function GET(request: Request) {
     });
   }
 
-  // Leaderboard: top 20 lawyers by reputation_score
-  const { data: leaderboard, error } = await service
+  // Leaderboard: top 20 by reputation_score, stable secondary sort by full_name
+  const { data: leaderboard, error } = await supabase
     .from("lawyers")
     .select("id, full_name, office_city, office_country, reputation_score, avatar_url, matters_count")
     .order("reputation_score", { ascending: false })
