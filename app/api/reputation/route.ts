@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getBadge } from "@/lib/reputation/badges";
 
 const uuidSchema = z.string().uuid();
 
@@ -23,7 +22,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid lawyer_id — must be a UUID" }, { status: 400 });
     }
     const lawyerId = parsed.data;
-    // Single lawyer: score + badge + recent events
+    // Single lawyer: score + events from the last 30 days (matches chart window)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const [lawyerResult, eventsResult] = await Promise.all([
       supabase
         .from("lawyers")
@@ -34,8 +36,9 @@ export async function GET(request: Request) {
         .from("reputation_events")
         .select("id, event_type, points, description, matter_id, created_at")
         .eq("lawyer_id", lawyerId)
+        .gte("created_at", thirtyDaysAgo.toISOString())
         .order("created_at", { ascending: false })
-        .limit(50),
+        .limit(100),
     ]);
 
     if (lawyerResult.error) {
@@ -50,10 +53,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      lawyer: {
-        ...lawyerResult.data,
-        badge: getBadge(lawyerResult.data.reputation_score ?? 0),
-      },
+      lawyer: lawyerResult.data,
       events: eventsResult.data ?? [],
     });
   }
@@ -71,7 +71,6 @@ export async function GET(request: Request) {
   const enriched = (leaderboard ?? []).map((l, idx) => ({
     ...l,
     rank: idx + 1,
-    badge: getBadge(l.reputation_score ?? 0),
   }));
 
   return NextResponse.json({ leaderboard: enriched });

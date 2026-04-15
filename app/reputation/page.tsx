@@ -49,7 +49,7 @@ export default function ReputationPage() {
       .finally(() => setLoadingBoard(false));
   }, [router]);
 
-  // Fetch detail when selection changes — AbortController + request ID guard
+  // Fetch detail when selection changes — request ID guard prevents stale responses from updating state
   const fetchDetail = useCallback(async (lawyerId: string) => {
     const requestId = ++latestRequestId.current;
 

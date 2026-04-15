@@ -34,7 +34,7 @@ export default function ReputationChart({ events, currentScore }: Props) {
   });
 
   const chartData = reversed.reverse().map((d) => ({
-    date: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    date: new Date(d.date).toLocaleDateString("en-GB", { month: "short", day: "numeric" }),
     score: d.score,
   }));
 
@@ -42,7 +42,7 @@ export default function ReputationChart({ events, currentScore }: Props) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4">
-      <p className="text-xs font-semibold text-gray-500 mb-3">Score over time</p>
+      <p className="text-xs font-semibold text-gray-500 mb-3">Last 30 days</p>
       <ResponsiveContainer width="100%" height={120}>
         <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <defs>
