@@ -57,7 +57,7 @@ export async function GET(
   const { data: team, error } = await service
     .from("matter_team")
     .select(
-      "id, role, match_score, joined_at, lawyer:lawyers(id, full_name, title, office_city, reputation_score)"
+      "id, role, match_score, joined_at, lawyer:lawyers(id, full_name, title, office_city, timezone, reputation_score)"
     )
     .eq("matter_id", params.id)
     .order("joined_at");
