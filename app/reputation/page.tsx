@@ -1,75 +1,79 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import LeaderboardTable from "./_components/LeaderboardTable";
 import EventFeed from "./_components/EventFeed";
 import ReputationChart from "./_components/ReputationChart";
+import type { Lawyer, ReputationEvent } from "@/types";
 
-interface LeaderboardEntry {
-  id: string;
-  full_name: string;
-  office_city: string;
-  office_country: string;
-  reputation_score: number;
-  avatar_url: string | null;
-  matters_count: number;
-  rank: number;
-}
+// Shape returned by GET /api/reputation (leaderboard entry)
+type LeaderboardEntry = Pick<
+  Lawyer,
+  "id" | "full_name" | "office_city" | "office_country" | "reputation_score" | "avatar_url" | "matters_count"
+> & { rank: number };
 
-interface ReputationEvent {
-  id: string;
-  event_type: string;
-  points: number;
-  description: string;
-  matter_id: string | null;
-  created_at: string;
-}
-
-interface LawyerDetail {
-  id: string;
-  full_name: string;
-  office_city: string;
-  reputation_score: number;
-  avatar_url: string | null;
-}
+// Shape returned by GET /api/reputation?lawyer_id=xxx
+type LawyerDetail = Pick<Lawyer, "id" | "full_name" | "office_city" | "reputation_score" | "avatar_url">;
 
 export default function ReputationPage() {
+  const router = useRouter();
+
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loadingBoard, setLoadingBoard] = useState(true);
+  const [boardError, setBoardError] = useState<string | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedLawyer, setSelectedLawyer] = useState<LawyerDetail | null>(null);
   const [events, setEvents] = useState<ReputationEvent[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
+  // Track latest request to discard stale responses from rapid row clicks
+  const latestRequestId = useRef(0);
+
   // Fetch leaderboard on mount
   useEffect(() => {
     fetch("/api/reputation")
-      .then((r) => r.json())
-      .then((data) => {
-        setLeaderboard(data.leaderboard ?? []);
-        // Auto-select #1 on load
-        if (data.leaderboard?.length) {
-          setSelectedId(data.leaderboard[0].id);
-        }
+      .then((r) => {
+        if (r.status === 401) { router.push("/login"); return null; }
+        if (!r.ok) throw new Error(`Failed to load leaderboard (${r.status})`);
+        return r.json();
       })
+      .then((data) => {
+        if (!data) return;
+        setLeaderboard(data.leaderboard ?? []);
+        if (data.leaderboard?.length) setSelectedId(data.leaderboard[0].id);
+      })
+      .catch((err) => setBoardError(err.message))
       .finally(() => setLoadingBoard(false));
-  }, []);
+  }, [router]);
 
-  // Fetch detail when selection changes
+  // Fetch detail when selection changes — AbortController + request ID guard
   const fetchDetail = useCallback(async (lawyerId: string) => {
+    const requestId = ++latestRequestId.current;
+
+    // Clear stale state immediately on selection change
+    setSelectedLawyer(null);
+    setEvents([]);
     setLoadingDetail(true);
+
     try {
       const res = await fetch(`/api/reputation?lawyer_id=${lawyerId}`);
+      if (requestId !== latestRequestId.current) return; // superseded
+
+      if (res.status === 401) { router.push("/login"); return; }
       if (!res.ok) return;
+
       const data = await res.json();
+      if (requestId !== latestRequestId.current) return; // superseded
+
       setSelectedLawyer(data.lawyer);
       setEvents(data.events ?? []);
     } finally {
-      setLoadingDetail(false);
+      if (requestId === latestRequestId.current) setLoadingDetail(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (selectedId) fetchDetail(selectedId);
@@ -89,6 +93,8 @@ export default function ReputationPage() {
         <div className="flex items-center justify-center py-24">
           <Loader2 className="w-6 h-6 animate-spin text-brand-purple" />
         </div>
+      ) : boardError ? (
+        <div className="text-center py-16 text-sm text-red-500">{boardError}</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Leaderboard — takes 2 of 3 columns */}

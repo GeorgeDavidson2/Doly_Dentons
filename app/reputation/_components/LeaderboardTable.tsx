@@ -51,8 +51,12 @@ export default function LeaderboardTable({ leaderboard, selectedId, onSelect }: 
             return (
               <tr
                 key={entry.id}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
                 onClick={() => onSelect(entry.id)}
-                className={`cursor-pointer transition-colors hover:bg-gray-50 ${
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(entry.id); } }}
+                className={`cursor-pointer transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-purple ${
                   isSelected ? "bg-brand-purple/5 hover:bg-brand-purple/5" : ""
                 }`}
               >
