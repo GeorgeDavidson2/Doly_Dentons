@@ -102,6 +102,7 @@ export interface FieldNote {
   id: string;
   author_id: string;
   jurisdiction_code: string;
+  jurisdiction_name: string;
   title: string;
   content: string;
   matter_type: string | null;
