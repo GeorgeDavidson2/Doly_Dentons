@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getBadge } from "@/lib/reputation/awards";
+
+const uuidSchema = z.string().uuid();
 
 // GET /api/reputation?lawyer_id=xxx   — single lawyer events + badge
 // GET /api/reputation                 — firm-wide leaderboard (top 20)
@@ -12,9 +15,14 @@ export async function GET(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const lawyerId = searchParams.get("lawyer_id");
+  const rawLawyerId = searchParams.get("lawyer_id");
 
-  if (lawyerId) {
+  if (rawLawyerId) {
+    const parsed = uuidSchema.safeParse(rawLawyerId);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid lawyer_id — must be a UUID" }, { status: 400 });
+    }
+    const lawyerId = parsed.data;
     // Single lawyer: score + badge + recent events
     const [lawyerResult, eventsResult] = await Promise.all([
       supabase

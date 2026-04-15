@@ -50,6 +50,10 @@ REVOKE ALL ON FUNCTION award_reputation_event(UUID, TEXT, INT, UUID, UUID, TEXT)
 GRANT EXECUTE ON FUNCTION award_reputation_event(UUID, TEXT, INT, UUID, UUID, TEXT) TO service_role;
 
 -- ── award_upvote_points ───────────────────────────────────────────────────────
+-- Drop the old signature from migration 006 (no p_source_id) so we don't
+-- accumulate overloads — PostgREST does not handle overloaded RPCs reliably.
+DROP FUNCTION IF EXISTS award_upvote_points(UUID, UUID, TEXT, INT, INT);
+
 -- Locks the lawyer row to serialize concurrent upvotes.
 -- Cap is scoped to (lawyer_id, source_id) — per field note.
 -- Returns points actually awarded (0 if cap already reached).
