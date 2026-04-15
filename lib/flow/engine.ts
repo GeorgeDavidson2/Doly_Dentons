@@ -1,6 +1,7 @@
 import { toZonedTime } from "date-fns-tz";
 import { isWeekend, getHours } from "date-fns";
 import { createServiceClient } from "@/lib/supabase/server";
+import { awardPoints } from "@/lib/reputation/awards";
 import type { Task, Lawyer, LawyerAvailability } from "@/types";
 
 export interface RouteTaskResult {
@@ -210,17 +211,11 @@ export async function routeTask(taskId: string): Promise<RouteTaskResult> {
   }
 
   // 8. Award reputation points to receiving lawyer
-  await supabase.from("reputation_events").insert({
+  await awardPoints({
     lawyer_id: winner.lawyer.id,
     event_type: "handoff_completed",
-    points: 25,
     matter_id: typedTask.matter_id,
     description: `Task routed by Flow engine: ${typedTask.title}`,
-  });
-
-  await supabase.rpc("increment_reputation", {
-    lawyer_uuid: winner.lawyer.id,
-    points_to_add: 25,
   });
 
   return {
