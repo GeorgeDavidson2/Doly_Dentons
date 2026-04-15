@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { generateBrief } from "@/lib/ai/groq";
+import { awardPoints } from "@/lib/reputation/awards";
 
 const schema = z.object({
   matter_id: z.string().uuid(),
@@ -231,6 +232,25 @@ export async function POST(req: Request) {
 
   if (briefsError) {
     return NextResponse.json({ error: "Failed to load briefs" }, { status: 500 });
+  }
+
+  // Award 50 points to the matter creator if all briefs are now ready
+  const allReady = (briefs ?? []).every((b) => b.status === "ready");
+  if (allReady && briefs && briefs.length > 0) {
+    const { data: matterMeta } = await service
+      .from("matters")
+      .select("lead_lawyer_id")
+      .eq("id", matter_id)
+      .single();
+
+    if (matterMeta?.lead_lawyer_id) {
+      await awardPoints({
+        lawyer_id: matterMeta.lead_lawyer_id,
+        event_type: "brief_generated",
+        matter_id,
+        description: `All ${briefs.length} jurisdiction briefs generated`,
+      });
+    }
   }
 
   return NextResponse.json({ briefs: briefs ?? [] });
