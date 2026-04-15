@@ -75,27 +75,34 @@ export async function awardPoints(opts: AwardOptions): Promise<number | null> {
   }
 
   // For profile_completed: one-time only
-  if (event_type === "profile_completed") {
-    const { data: existing, error: existingError } = await supabase
-      .from("reputation_events")
-      .select("id")
-      .eq("lawyer_id", lawyer_id)
-      .eq("event_type", "profile_completed")
-      .maybeSingle();
-
-    if (existingError) return null;
-    if (existing) return null;
-  }
-
-  // Insert event
-  const { error: eventError } = await supabase.from("reputation_events").insert({
+  const eventPayload = {
     lawyer_id,
     event_type,
     points,
     matter_id: matter_id ?? null,
     description: description ?? defaultDescription(event_type),
-  });
+  };
 
+  // Insert event. For profile_completed, rely on a DB uniqueness constraint
+  // and treat duplicate-key conflicts as "already awarded".
+  let eventError: { code?: string; message: string } | null = null;
+
+  if (event_type === "profile_completed") {
+    const { error } = await supabase
+      .from("reputation_events")
+      .insert(eventPayload)
+      .select("id")
+      .single();
+
+    eventError = error;
+
+    if (eventError?.code === "23505") {
+      return null;
+    }
+  } else {
+    const { error } = await supabase.from("reputation_events").insert(eventPayload);
+    eventError = error;
+  }
   if (eventError) {
     console.error(`[reputation] Failed to insert event ${event_type}:`, eventError.message);
     return null;
