@@ -51,7 +51,7 @@ interface AwardOptions {
  */
 export async function awardPoints(opts: AwardOptions): Promise<number | null> {
   const { lawyer_id, event_type, matter_id, description } = opts;
-  let points = REPUTATION_POINTS[event_type];
+  let points: number = REPUTATION_POINTS[event_type];
 
   const supabase = createServiceClient();
 
@@ -108,7 +108,17 @@ export async function awardPoints(opts: AwardOptions): Promise<number | null> {
     return null;
   }
 
-  // Increment score on lawyers table
+  // Atomically increment score in DB to avoid lost updates under concurrency
+  const { error: incrementError } = await supabase.rpc("increment_reputation", {
+    lawyer_uuid: lawyer_id,
+    points_to_add: points,
+  });
+
+  if (incrementError) {
+    console.error(`[reputation] Failed to increment score for ${lawyer_id}:`, incrementError.message);
+    return null;
+  }
+
   const { data: lawyer, error: fetchError } = await supabase
     .from("lawyers")
     .select("reputation_score")
@@ -116,23 +126,11 @@ export async function awardPoints(opts: AwardOptions): Promise<number | null> {
     .single();
 
   if (fetchError || !lawyer) {
-    console.error(`[reputation] Failed to fetch lawyer ${lawyer_id}:`, fetchError?.message);
+    console.error(`[reputation] Failed to fetch updated score for ${lawyer_id}:`, fetchError?.message);
     return null;
   }
 
-  const newScore = (lawyer.reputation_score ?? 0) + points;
-
-  const { error: updateError } = await supabase
-    .from("lawyers")
-    .update({ reputation_score: newScore })
-    .eq("id", lawyer_id);
-
-  if (updateError) {
-    console.error(`[reputation] Failed to update score for ${lawyer_id}:`, updateError.message);
-    return null;
-  }
-
-  return newScore;
+  return lawyer.reputation_score ?? 0;
 }
 
 function defaultDescription(event_type: ReputationEventType): string {
