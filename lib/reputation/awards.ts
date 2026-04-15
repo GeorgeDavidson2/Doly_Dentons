@@ -51,31 +51,39 @@ interface AwardOptions {
  */
 export async function awardPoints(opts: AwardOptions): Promise<number | null> {
   const { lawyer_id, event_type, matter_id, description } = opts;
-  const points = REPUTATION_POINTS[event_type];
+  let points = REPUTATION_POINTS[event_type];
 
   const supabase = createServiceClient();
 
   // For note_upvoted: check running total against cap before awarding
   if (event_type === "note_upvoted") {
-    const { data: upvoteSum } = await supabase
+    const { data: upvoteAggregate, error: upvoteAggregateError } = await supabase
       .from("reputation_events")
-      .select("points")
+      .select("sum:points.sum()")
       .eq("lawyer_id", lawyer_id)
-      .eq("event_type", "note_upvoted");
+      .eq("event_type", "note_upvoted")
+      .maybeSingle();
 
-    const total = (upvoteSum ?? []).reduce((sum, r) => sum + r.points, 0);
-    if (total >= NOTE_UPVOTE_CAP) return null;
+    if (upvoteAggregateError) return null;
+
+    const total = upvoteAggregate?.sum ?? 0;
+    const remaining = NOTE_UPVOTE_CAP - total;
+
+    if (remaining <= 0) return null;
+
+    points = Math.min(points, remaining);
   }
 
   // For profile_completed: one-time only
   if (event_type === "profile_completed") {
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("reputation_events")
       .select("id")
       .eq("lawyer_id", lawyer_id)
       .eq("event_type", "profile_completed")
       .maybeSingle();
 
+    if (existingError) return null;
     if (existing) return null;
   }
 
