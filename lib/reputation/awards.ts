@@ -19,22 +19,9 @@ export type ReputationEventType = keyof typeof REPUTATION_POINTS;
 // Max points a single field note can earn its author from upvotes
 export const NOTE_UPVOTE_CAP = 200;
 
-// ─── Badge tiers ─────────────────────────────────────────────────────────────
-
-export const BADGE_TIERS = [
-  { label: "Contributor", min: 0 },
-  { label: "Rising Star", min: 100 },
-  { label: "Regional Expert", min: 500 },
-  { label: "Global Expert", min: 1000 },
-  { label: "Elite Partner", min: 2500 },
-] as const;
-
-export type BadgeTier = typeof BADGE_TIERS[number]["label"];
-
-export function getBadge(score: number): BadgeTier {
-  const tier = [...BADGE_TIERS].reverse().find((t) => score >= t.min);
-  return tier?.label ?? "Contributor";
-}
+// ─── Badge tiers (re-exported from client-safe badges.ts) ───────────────────
+export { BADGE_TIERS, getBadge } from "@/lib/reputation/badges";
+export type { BadgeTier } from "@/lib/reputation/badges";
 
 // ─── Core award function ──────────────────────────────────────────────────────
 
