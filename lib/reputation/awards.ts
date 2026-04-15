@@ -15,7 +15,7 @@ export const REPUTATION_POINTS = {
 
 export type ReputationEventType = keyof typeof REPUTATION_POINTS;
 
-// Cap on total points earned from note_upvoted events
+// Max points a single field note can earn its author from upvotes
 export const NOTE_UPVOTE_CAP = 200;
 
 // ─── Badge tiers ─────────────────────────────────────────────────────────────
@@ -41,102 +41,70 @@ interface AwardOptions {
   lawyer_id: string;
   event_type: ReputationEventType;
   matter_id?: string | null;
+  /** For note_upvoted: the field_note id — required to scope the per-note cap. */
+  source_id?: string | null;
   description?: string;
 }
 
 /**
  * Awards reputation points to a lawyer.
- * - Inserts a reputation_events row.
- * - Atomically increments lawyers.reputation_score via the increment_reputation RPC
- *   (avoids read-modify-write race conditions).
- * Returns the new reputation score, or null if skipped/failed.
+ *
+ * - note_upvoted: delegates entirely to award_upvote_points RPC, which locks
+ *   the lawyer row and enforces the per-note cap atomically.
+ * - All other events: delegates to award_reputation_event RPC, which inserts
+ *   the event row and increments the score in one transaction.
+ *   profile_completed and brief_generated have DB unique indexes; a 23505
+ *   conflict means already awarded and is treated as a silent skip.
+ *
+ * Returns points awarded, or null if skipped or failed.
  */
 export async function awardPoints(opts: AwardOptions): Promise<number | null> {
-  const { lawyer_id, event_type, matter_id, description } = opts;
-  let points: number = REPUTATION_POINTS[event_type];
-
+  const { lawyer_id, event_type, matter_id, source_id, description } = opts;
+  const points = REPUTATION_POINTS[event_type];
   const supabase = createServiceClient();
 
-  // ── note_upvoted: DB-side SUM via aggregate, clamp to remaining cap ─────────
+  // ── note_upvoted: atomic per-note cap via DB RPC ────────────────────────────
   if (event_type === "note_upvoted") {
-    const { data: upvoteAggregate, error: upvoteAggregateError } = await supabase
-      .from("reputation_events")
-      .select("sum:points.sum()")
-      .eq("lawyer_id", lawyer_id)
-      .eq("event_type", "note_upvoted")
-      .maybeSingle();
-
-    // Hard failure — do not silently award when we can't verify the cap
-    if (upvoteAggregateError) {
-      console.error("[reputation] Failed to check upvote cap:", upvoteAggregateError.message);
+    if (!source_id) {
+      console.error("[reputation] note_upvoted requires source_id (field_note id)");
       return null;
     }
 
-    const total = (upvoteAggregate?.sum as number) ?? 0;
-    const remaining = NOTE_UPVOTE_CAP - total;
-    if (remaining <= 0) return null;
+    const { data: awarded, error } = await supabase.rpc("award_upvote_points", {
+      p_lawyer_id: lawyer_id,
+      p_source_id: source_id,
+      p_matter_id: matter_id ?? null,
+      p_description: description ?? defaultDescription("note_upvoted"),
+      p_points: points,
+      p_cap: NOTE_UPVOTE_CAP,
+    });
 
-    // Clamp: award only what remains under the cap
-    points = Math.min(points, remaining);
+    if (error) {
+      console.error("[reputation] award_upvote_points RPC failed:", error.message);
+      return null;
+    }
+
+    return (awarded as number) > 0 ? (awarded as number) : null;
   }
 
-  // ── Build event payload ─────────────────────────────────────────────────────
-  const eventPayload = {
-    lawyer_id,
-    event_type,
-    points,
-    matter_id: matter_id ?? null,
-    description: description ?? defaultDescription(event_type),
-  };
-
-  // ── Insert event ────────────────────────────────────────────────────────────
-  // For profile_completed: rely on the partial unique index and treat
-  // duplicate-key conflicts (23505) as "already awarded".
-  let eventError: { code?: string; message: string } | null = null;
-
-  if (event_type === "profile_completed") {
-    const { error } = await supabase
-      .from("reputation_events")
-      .insert(eventPayload)
-      .select("id")
-      .single();
-
-    eventError = error;
-    if (eventError?.code === "23505") return null;
-  } else {
-    const { error } = await supabase.from("reputation_events").insert(eventPayload);
-    eventError = error;
-  }
-
-  if (eventError) {
-    console.error(`[reputation] Failed to insert event ${event_type}:`, eventError.message);
-    return null;
-  }
-
-  // ── Atomic DB-side increment — no read-modify-write race ────────────────────
-  const { error: incrementError } = await supabase.rpc("increment_reputation", {
-    lawyer_uuid: lawyer_id,
-    points_to_add: points,
+  // ── All other events: atomic insert + increment via DB RPC ─────────────────
+  const { error } = await supabase.rpc("award_reputation_event", {
+    p_lawyer_id: lawyer_id,
+    p_event_type: event_type,
+    p_points: points,
+    p_matter_id: matter_id ?? null,
+    p_source_id: source_id ?? null,
+    p_description: description ?? defaultDescription(event_type),
   });
 
-  if (incrementError) {
-    console.error("[reputation] increment_reputation RPC failed:", incrementError.message);
+  if (error) {
+    // 23505 = unique violation — profile_completed or brief_generated already awarded
+    if ((error as { code?: string }).code === "23505") return null;
+    console.error(`[reputation] award_reputation_event RPC failed (${event_type}):`, error.message);
     return null;
   }
 
-  // Return updated score
-  const { data: lawyer, error: fetchError } = await supabase
-    .from("lawyers")
-    .select("reputation_score")
-    .eq("id", lawyer_id)
-    .single();
-
-  if (fetchError || !lawyer) {
-    console.error("[reputation] Failed to fetch updated score:", fetchError?.message);
-    return null;
-  }
-
-  return lawyer.reputation_score ?? 0;
+  return points;
 }
 
 function defaultDescription(event_type: ReputationEventType): string {

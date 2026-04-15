@@ -54,6 +54,7 @@ export async function GET(request: Request) {
     .from("lawyers")
     .select("id, full_name, office_city, office_country, reputation_score, avatar_url, matters_count")
     .order("reputation_score", { ascending: false })
+    .order("full_name", { ascending: true })
     .limit(20);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
