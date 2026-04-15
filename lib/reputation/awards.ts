@@ -46,8 +46,10 @@ interface AwardOptions {
 
 /**
  * Awards reputation points to a lawyer.
- * Inserts a reputation_events row and increments lawyers.reputation_score.
- * Returns the new reputation score, or null on failure.
+ * - Inserts a reputation_events row.
+ * - Atomically increments lawyers.reputation_score via the increment_reputation RPC
+ *   (avoids read-modify-write race conditions).
+ * Returns the new reputation score, or null if skipped/failed.
  */
 export async function awardPoints(opts: AwardOptions): Promise<number | null> {
   const { lawyer_id, event_type, matter_id, description } = opts;
@@ -55,7 +57,7 @@ export async function awardPoints(opts: AwardOptions): Promise<number | null> {
 
   const supabase = createServiceClient();
 
-  // For note_upvoted: check running total against cap before awarding
+  // ── note_upvoted: DB-side SUM via aggregate, clamp to remaining cap ─────────
   if (event_type === "note_upvoted") {
     const { data: upvoteAggregate, error: upvoteAggregateError } = await supabase
       .from("reputation_events")
@@ -64,17 +66,21 @@ export async function awardPoints(opts: AwardOptions): Promise<number | null> {
       .eq("event_type", "note_upvoted")
       .maybeSingle();
 
-    if (upvoteAggregateError) return null;
+    // Hard failure — do not silently award when we can't verify the cap
+    if (upvoteAggregateError) {
+      console.error("[reputation] Failed to check upvote cap:", upvoteAggregateError.message);
+      return null;
+    }
 
-    const total = upvoteAggregate?.sum ?? 0;
+    const total = (upvoteAggregate?.sum as number) ?? 0;
     const remaining = NOTE_UPVOTE_CAP - total;
-
     if (remaining <= 0) return null;
 
+    // Clamp: award only what remains under the cap
     points = Math.min(points, remaining);
   }
 
-  // For profile_completed: one-time only
+  // ── Build event payload ─────────────────────────────────────────────────────
   const eventPayload = {
     lawyer_id,
     event_type,
@@ -83,8 +89,9 @@ export async function awardPoints(opts: AwardOptions): Promise<number | null> {
     description: description ?? defaultDescription(event_type),
   };
 
-  // Insert event. For profile_completed, rely on a DB uniqueness constraint
-  // and treat duplicate-key conflicts as "already awarded".
+  // ── Insert event ────────────────────────────────────────────────────────────
+  // For profile_completed: rely on the partial unique index and treat
+  // duplicate-key conflicts (23505) as "already awarded".
   let eventError: { code?: string; message: string } | null = null;
 
   if (event_type === "profile_completed") {
@@ -95,30 +102,29 @@ export async function awardPoints(opts: AwardOptions): Promise<number | null> {
       .single();
 
     eventError = error;
-
-    if (eventError?.code === "23505") {
-      return null;
-    }
+    if (eventError?.code === "23505") return null;
   } else {
     const { error } = await supabase.from("reputation_events").insert(eventPayload);
     eventError = error;
   }
+
   if (eventError) {
     console.error(`[reputation] Failed to insert event ${event_type}:`, eventError.message);
     return null;
   }
 
-  // Atomically increment score in DB to avoid lost updates under concurrency
+  // ── Atomic DB-side increment — no read-modify-write race ────────────────────
   const { error: incrementError } = await supabase.rpc("increment_reputation", {
     lawyer_uuid: lawyer_id,
     points_to_add: points,
   });
 
   if (incrementError) {
-    console.error(`[reputation] Failed to increment score for ${lawyer_id}:`, incrementError.message);
+    console.error("[reputation] increment_reputation RPC failed:", incrementError.message);
     return null;
   }
 
+  // Return updated score
   const { data: lawyer, error: fetchError } = await supabase
     .from("lawyers")
     .select("reputation_score")
@@ -126,7 +132,7 @@ export async function awardPoints(opts: AwardOptions): Promise<number | null> {
     .single();
 
   if (fetchError || !lawyer) {
-    console.error(`[reputation] Failed to fetch updated score for ${lawyer_id}:`, fetchError?.message);
+    console.error("[reputation] Failed to fetch updated score:", fetchError?.message);
     return null;
   }
 

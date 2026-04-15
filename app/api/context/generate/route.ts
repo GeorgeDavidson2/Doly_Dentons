@@ -234,7 +234,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to load briefs" }, { status: 500 });
   }
 
-  // Award 50 points to the matter creator if all briefs are now ready
+  // Award 50 points to the matter creator if all briefs are now ready.
+  // Guard: check for an existing brief_generated event for this matter
+  // so concurrent or repeated calls don't double-award.
   const allReady = (briefs ?? []).every((b) => b.status === "ready");
   if (allReady && briefs && briefs.length > 0) {
     const { data: matterMeta } = await service
@@ -244,12 +246,22 @@ export async function POST(req: Request) {
       .single();
 
     if (matterMeta?.lead_lawyer_id) {
-      await awardPoints({
-        lawyer_id: matterMeta.lead_lawyer_id,
-        event_type: "brief_generated",
-        matter_id,
-        description: `All ${briefs.length} jurisdiction briefs generated`,
-      });
+      const { data: alreadyAwarded } = await service
+        .from("reputation_events")
+        .select("id")
+        .eq("lawyer_id", matterMeta.lead_lawyer_id)
+        .eq("event_type", "brief_generated")
+        .eq("matter_id", matter_id)
+        .maybeSingle();
+
+      if (!alreadyAwarded) {
+        await awardPoints({
+          lawyer_id: matterMeta.lead_lawyer_id,
+          event_type: "brief_generated",
+          matter_id,
+          description: `All ${briefs.length} jurisdiction briefs generated`,
+        });
+      }
     }
   }
 

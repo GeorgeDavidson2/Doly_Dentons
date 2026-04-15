@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
   if (lawyerId) {
     // Single lawyer: recent events + score + badge
-    const [{ data: lawyer }, { data: events }] = await Promise.all([
+    const [lawyerResult, eventsResult] = await Promise.all([
       service
         .from("lawyers")
         .select("id, full_name, office_city, reputation_score, avatar_url")
@@ -29,14 +29,23 @@ export async function GET(request: Request) {
         .limit(50),
     ]);
 
-    if (!lawyer) return NextResponse.json({ error: "Lawyer not found" }, { status: 404 });
+    if (lawyerResult.error) {
+      const status = lawyerResult.error.code === "PGRST116" ? 404 : 500;
+      return NextResponse.json({ error: lawyerResult.error.message }, { status });
+    }
+    if (!lawyerResult.data) {
+      return NextResponse.json({ error: "Lawyer not found" }, { status: 404 });
+    }
+    if (eventsResult.error) {
+      return NextResponse.json({ error: eventsResult.error.message }, { status: 500 });
+    }
 
     return NextResponse.json({
       lawyer: {
-        ...lawyer,
-        badge: getBadge(lawyer.reputation_score ?? 0),
+        ...lawyerResult.data,
+        badge: getBadge(lawyerResult.data.reputation_score ?? 0),
       },
-      events: events ?? [],
+      events: eventsResult.data ?? [],
     });
   }
 
