@@ -493,6 +493,26 @@ async function main() {
   await assertNoError("insert reputation_events", eventsError);
   log(`✓ ${REPUTATION_EVENTS.length} reputation events inserted.`);
 
+  // ── Sync reputation scores ─────────────────────────────────────────────────
+  // Direct event inserts don't go through the RPC that increments reputation_score,
+  // so we set the canonical scores explicitly here.
+  log("Syncing reputation scores on lawyers table...");
+  const scoreUpdates = [
+    { id: LAWYERS.isabella, reputation_score: 1840 },
+    { id: LAWYERS.klaus,    reputation_score: 1200 },
+    { id: LAWYERS.rodrigo,  reputation_score: 890  },
+    { id: LAWYERS.sofia,    reputation_score: 560  },
+    { id: LAWYERS.marcus,   reputation_score: 340  },
+  ];
+  for (const { id, reputation_score } of scoreUpdates) {
+    const { error } = await supabase
+      .from("lawyers")
+      .update({ reputation_score })
+      .eq("id", id);
+    await assertNoError(`update reputation_score for ${id}`, error);
+  }
+  log("✓ Reputation scores synced.");
+
   // ── Summary ───────────────────────────────────────────────────────────────
   log("─────────────────────────────────────");
   log("Seed complete. Summary:");
