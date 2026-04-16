@@ -87,13 +87,18 @@ export default function Sidebar() {
       {/* ── Mobile / tablet top bar (below lg) ───────────────────────── */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-brand-purple flex items-center justify-between px-4 h-14 border-b border-white/10">
         <Logo />
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="text-white/70 hover:text-white p-1"
-          aria-label="Open navigation"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Link href="/profile" className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
+            <span className="text-white text-xs font-semibold">Me</span>
+          </Link>
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="text-white/70 hover:text-white p-1"
+            aria-label="Open navigation"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* ── Mobile drawer overlay ─────────────────────────────────────── */}
