@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import Sidebar from "@/components/layout/Sidebar";
 import MattersDirectory, { type MatterSummary } from "./_components/MattersDirectory";
 
 export default async function MattersPage() {
@@ -49,11 +48,10 @@ export default async function MattersPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-brand-grey-bg">
-      <Sidebar />
+    
       <main className="flex-1 p-8">
         <MattersDirectory matters={matters} />
       </main>
-    </div>
+
   );
 }

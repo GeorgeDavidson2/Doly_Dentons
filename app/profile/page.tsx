@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import Sidebar from "@/components/layout/Sidebar";
 import ProfileForm from "./_components/ProfileForm";
 import type { Lawyer, LawyerJurisdiction, LawyerAvailability } from "@/types";
 
@@ -33,8 +32,7 @@ export default async function ProfilePage() {
   ]);
 
   return (
-    <div className="flex min-h-screen bg-brand-grey-bg">
-      <Sidebar />
+    
       <main className="flex-1 p-8 max-w-3xl">
         <ProfileForm
           lawyer={lawyer as Lawyer}
@@ -42,6 +40,6 @@ export default async function ProfilePage() {
           availability={(availabilityResult.data ?? []) as LawyerAvailability[]}
         />
       </main>
-    </div>
+
   );
 }
