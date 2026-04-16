@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import Sidebar from "@/components/layout/Sidebar";
 import LawyersDirectory from "./_components/LawyersDirectory";
 import type { LawyerWithJurisdictions } from "@/components/lawyers/LawyerCard";
 
@@ -22,11 +21,10 @@ export default async function LawyersPage() {
   const lawyers = (data ?? []) as unknown as LawyerWithJurisdictions[];
 
   return (
-    <div className="flex min-h-screen bg-brand-grey-bg">
-      <Sidebar />
+    
       <main className="flex-1 p-8">
         <LawyersDirectory lawyers={lawyers} />
       </main>
-    </div>
+
   );
 }
