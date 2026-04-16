@@ -215,7 +215,7 @@ export async function routeTask(taskId: string): Promise<RouteTaskResult> {
     lawyer_id: winner.lawyer.id,
     event_type: "handoff_completed",
     matter_id: typedTask.matter_id,
-    description: `Task routed by Flow engine: ${typedTask.title}`,
+    description: "Task routed by Flow engine",
   });
 
   return {

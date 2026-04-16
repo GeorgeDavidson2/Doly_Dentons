@@ -22,7 +22,12 @@ export default class ErrorBoundary extends Component<Props, State> {
   static getDerivedStateFromError(error: unknown): State {
     return {
       hasError: true,
-      message: error instanceof Error ? error.message : "An unexpected error occurred.",
+      message:
+        process.env.NODE_ENV === "production"
+          ? "An unexpected error occurred. Please try again."
+          : error instanceof Error
+            ? error.message
+            : "An unexpected error occurred.",
     };
   }
 

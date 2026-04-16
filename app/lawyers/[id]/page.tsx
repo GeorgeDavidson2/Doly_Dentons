@@ -155,9 +155,6 @@ export default async function LawyerProfilePage({ params }: { params: { id: stri
               <li key={event.id} className="flex items-center justify-between py-3">
                 <div>
                   <p className="text-sm text-gray-700">{eventLabels[event.event_type]}</p>
-                  {event.description && (
-                    <p className="text-xs text-gray-400 mt-0.5">{event.description}</p>
-                  )}
                 </div>
                 <span className="text-sm font-semibold text-green-600 flex-shrink-0 ml-4">
                   +{event.points}

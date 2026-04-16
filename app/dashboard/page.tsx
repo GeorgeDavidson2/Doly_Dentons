@@ -72,7 +72,7 @@ export default async function DashboardPage() {
   // Parallel data fetches — only run lawyer-scoped queries if we have a lawyer row
   const lawyerId = lawyer?.id ?? null;
 
-  const [mattersResult, tasksResult, eventsResult, teamCountResult] = await Promise.all([
+  const [mattersResult, tasksResult, eventsResult, teamCountResult, activeMattersCountResult, openTasksCountResult] = await Promise.all([
     lawyerId
       ? supabase
           .from("matters")
@@ -108,17 +108,35 @@ export default async function DashboardPage() {
           .select("matter_id", { count: "exact", head: true })
           .eq("lawyer_id", lawyerId)
       : Promise.resolve({ count: 0, error: null }),
+
+    lawyerId
+      ? supabase
+          .from("matters")
+          .select("id", { count: "exact", head: true })
+          .eq("lead_lawyer_id", lawyerId)
+          .in("status", ["active"])
+      : Promise.resolve({ count: 0, error: null }),
+
+    lawyerId
+      ? supabase
+          .from("tasks")
+          .select("id", { count: "exact", head: true })
+          .eq("assigned_to", lawyerId)
+          .in("status", ["pending", "in_progress", "blocked"])
+      : Promise.resolve({ count: 0, error: null }),
   ]);
 
   const matters = (mattersResult.data ?? []) as Matter[];
   const tasks = (tasksResult.data ?? []) as Task[];
   const events = (eventsResult.data ?? []) as ReputationEvent[];
   const teamMattersCount = (teamCountResult as { count: number | null }).count ?? 0;
+  const activeMattersCount = (activeMattersCountResult as { count: number | null }).count ?? matters.length;
+  const openTasksCount = (openTasksCountResult as { count: number | null }).count ?? tasks.length;
 
   const stats = [
     {
       label: "Active matters",
-      value: matters.length,
+      value: activeMattersCount,
       icon: Briefcase,
       href: "/matters",
       color: "text-brand-purple",
@@ -134,7 +152,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Open tasks",
-      value: tasks.length,
+      value: openTasksCount,
       icon: CheckSquare,
       href: "/matters",
       color: "text-amber-600",

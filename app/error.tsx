@@ -11,6 +11,11 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const userMessage =
+    process.env.NODE_ENV === "production"
+      ? "An unexpected error occurred. Please try again."
+      : error.message || "An unexpected error occurred. Please try again.";
+
   useEffect(() => {
     console.error("[GlobalError]", error);
   }, [error]);
@@ -23,7 +28,7 @@ export default function GlobalError({
         </div>
         <h1 className="text-lg font-semibold text-gray-900 mb-1">Something went wrong</h1>
         <p className="text-sm text-gray-500 mb-6">
-          {error.message || "An unexpected error occurred. Please try again."}
+          {userMessage}
         </p>
         <div className="flex items-center justify-center gap-3">
           <button

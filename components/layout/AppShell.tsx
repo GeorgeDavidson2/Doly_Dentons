@@ -22,9 +22,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <TopBar />
         </div>
         {/* pt-14 offsets the fixed mobile top bar on small screens */}
-        <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">
+        <div className="flex-1 overflow-y-auto pt-14 lg:pt-0">
           {children}
-        </main>
+        </div>
       </div>
     </div>
   );
