@@ -37,7 +37,7 @@ export async function POST(
   // Fetch the note to get author + current upvote count
   const { data: note, error: noteError } = await service
     .from("field_notes")
-    .select("id, author_id, upvotes")
+    .select("id, author_id, upvotes, title")
     .eq("id", noteId)
     .single();
 
@@ -65,7 +65,7 @@ export async function POST(
     lawyer_id: note.author_id,
     event_type: "note_upvoted",
     source_id: noteId,
-    description: "Field note upvoted",
+    description: `Field note upvoted: ${note.title}`,
   });
 
   return NextResponse.json({ upvotes: note.upvotes + 1 });

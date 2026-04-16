@@ -108,7 +108,7 @@ export async function POST(req: Request) {
   await awardPoints({
     lawyer_id: lawyer.id,
     event_type: "note_contributed",
-    description: "Contributed a field note",
+    description: `Contributed field note: ${title}`,
   });
 
   return NextResponse.json(note, { status: 201 });
