@@ -130,8 +130,8 @@ export default async function DashboardPage() {
   const tasks = (tasksResult.data ?? []) as Task[];
   const events = (eventsResult.data ?? []) as ReputationEvent[];
   const teamMattersCount = (teamCountResult as { count: number | null }).count ?? 0;
-  const activeMattersCount = (activeMattersCountResult as { count: number | null }).count ?? matters.length;
-  const openTasksCount = (openTasksCountResult as { count: number | null }).count ?? tasks.length;
+  const activeMattersCount = (activeMattersCountResult as { count: number | null }).count ?? 0;
+  const openTasksCount = (openTasksCountResult as { count: number | null }).count ?? 0;
 
   const stats = [
     {
