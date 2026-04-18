@@ -59,49 +59,51 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId }: Props) 
             key={task.id}
             className={`border rounded-xl transition-all ${status.bg} border-gray-200`}
           >
-            {/* Header row */}
-            <button
-              className="w-full text-left px-4 py-3 flex items-center gap-3"
-              onClick={() => setExpandedId(isExpanded ? null : task.id)}
-            >
-              <StatusIcon className={`w-4 h-4 flex-shrink-0 ${status.color} ${task.status === "in_progress" ? "animate-spin" : ""}`} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${priority.color}`}>
-                    {priority.label}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 mt-0.5">
-                  {task.required_jurisdiction && (
-                    <span className="text-[11px] text-brand-purple font-medium">{task.required_jurisdiction}</span>
-                  )}
-                  {task.assignee ? (
-                    <span className="text-[11px] text-gray-500 flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {task.assignee.full_name} · {task.assignee.office_city}
+            {/* Header row — toggle and Route are siblings to avoid nested <button> */}
+            <div className="px-4 py-3 flex items-center gap-3">
+              <button
+                type="button"
+                aria-expanded={isExpanded}
+                className="flex-1 min-w-0 text-left flex items-center gap-3 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50"
+                onClick={() => setExpandedId(isExpanded ? null : task.id)}
+              >
+                <StatusIcon className={`w-4 h-4 flex-shrink-0 ${status.color} ${task.status === "in_progress" ? "animate-spin" : ""}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${priority.color}`}>
+                      {priority.label}
                     </span>
-                  ) : (
-                    <span className="text-[11px] text-gray-400">Unassigned</span>
-                  )}
-                  {task.due_date && (
-                    <span className="text-[11px] text-gray-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {new Date(task.due_date).toLocaleDateString()}
-                    </span>
-                  )}
+                  </div>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    {task.required_jurisdiction && (
+                      <span className="text-[11px] text-brand-purple font-medium">{task.required_jurisdiction}</span>
+                    )}
+                    {task.assignee ? (
+                      <span className="text-[11px] text-gray-500 flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {task.assignee.full_name} · {task.assignee.office_city}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-gray-400">Unassigned</span>
+                    )}
+                    {task.due_date && (
+                      <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(task.due_date).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </button>
 
               {/* Route button — only for pending/unassigned */}
               {(task.status === "pending" || !task.assignee) && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRouteTask(task.id);
-                  }}
+                  type="button"
+                  onClick={() => onRouteTask(task.id)}
                   disabled={isRouting}
-                  className="flex-shrink-0 text-xs font-medium px-3 py-1.5 bg-brand-purple text-white rounded-lg hover:bg-brand-purple-dark disabled:opacity-50 transition-colors"
+                  className="flex-shrink-0 text-xs font-medium px-3 py-1.5 bg-brand-purple text-white rounded-lg hover:bg-brand-purple-dark disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50 focus-visible:ring-offset-1"
                 >
                   {isRouting ? (
                     <span className="flex items-center gap-1.5">
@@ -113,7 +115,7 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId }: Props) 
                   )}
                 </button>
               )}
-            </button>
+            </div>
 
             {/* Expanded detail */}
             {isExpanded && (

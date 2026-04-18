@@ -41,7 +41,8 @@ export default function TopBar() {
     <div className="h-14 flex items-center justify-end px-6 border-b border-gray-100 bg-white flex-shrink-0">
       <Link
         href="/profile"
-        className="flex items-center gap-2.5 group"
+        aria-label="My profile"
+        className="flex items-center gap-2.5 group rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50"
         title="My profile"
       >
         <span className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors hidden sm:block">

@@ -38,7 +38,7 @@ export default async function MatterLayout({
   return (
     <div className="flex-1 flex flex-col min-w-0">
       {/* Matter header */}
-      <div className="bg-white border-b border-brand-grey px-8 pt-7 pb-0">
+      <div className="bg-white border-b border-brand-grey px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7 pb-0">
         <Link
           href="/matters"
           className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-brand-purple transition-colors mb-4"
@@ -77,7 +77,7 @@ export default async function MatterLayout({
         <MatterTabs id={params.id} />
       </div>
 
-      <main className="flex-1 p-8">{children}</main>
+      <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
     </div>
   );
 }

@@ -46,7 +46,7 @@ function Section({
         aria-expanded={open}
         aria-controls={sectionId}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-between w-full text-left"
+        className="flex items-center justify-between w-full text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
       >
         <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
           {label}
