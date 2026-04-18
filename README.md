@@ -69,16 +69,20 @@ See [Environment Variables](#environment-variables) below for what each variable
 
 ### 4. Set up the database
 
-Run the migration to create all tables, indexes, and RLS policies:
+Apply each SQL file in `supabase/migrations/` in order, either via the Supabase CLI (`npx supabase db push`) or by pasting them into the Supabase SQL editor:
+
+| File | Purpose |
+|---|---|
+| `001_initial_schema.sql` | Core tables, indexes, RLS policies, pgvector extension |
+| `005_match_lawyers_rpc.sql` | Cosine-similarity RPC used by the Connect matcher |
+| `006_reputation_guards.sql` | Guards preventing duplicate reputation awards |
+| `007_reputation_atomic.sql` | Atomic reputation-score increment function |
+| `008_field_notes_jurisdiction_name.sql` | Denormalised jurisdiction name column on field notes |
+
+If you have `DATABASE_URL` in `.env.local` you can apply any file with:
 
 ```bash
-npx supabase db push
-```
-
-Or apply the migration file directly in the Supabase SQL editor:
-
-```
-supabase/migrations/001_initial_schema.sql
+npx tsx scripts/apply-migration.ts supabase/migrations/005_match_lawyers_rpc.sql
 ```
 
 ### 5. Seed demo data
@@ -156,10 +160,60 @@ doly/
 To restore the database to a clean demo state before a presentation:
 
 ```bash
-npm run demo-reset
+npm run demo:reset
 ```
 
-This resets all matters, tasks, and reputation events while preserving the 15 seeded lawyers and their profiles. Runs in under 30 seconds.
+This clears Marcus's matters, tasks, team memberships, briefs, and reputation events, then reinstates the seeded lawyers, field notes, and reputation history. Runs in under 30 seconds. **Always run this immediately before a live demo.**
+
+---
+
+## Demo Script (8-minute walkthrough)
+
+Run `npm run demo:reset` first so the database is in a predictable state.
+
+### 1. Login as Marcus (30s)
+- Go to `/login`
+- Email: `marcus.chen@dentons.com`
+- Click the magic link in Supabase (or in your inbox) → lands on `/dashboard`
+- Dashboard shows Marcus's active matters, assigned tasks, and reputation history
+
+### 2. Create a new matter (1m)
+- Click **New Matter** from the sidebar or matters page
+- Fill in:
+  - **Title:** `TechCorp Global Expansion`
+  - **Client:** `TechCorp`
+  - **Matter type:** `Corporate`
+  - **Deadline:** 5 days from today
+  - **Jurisdictions:** Brazil (BR), Mexico (MX), Colombia (CO), Germany (DE)
+- Submit → redirects to `/matters/[id]/overview`
+
+### 3. Context tab — live brief generation (1m 30s)
+- Click **Context** tab
+- 4 jurisdiction briefs generate in parallel (~30s total) — skeletons show "Generating…" state
+- Each brief contains: Legal landscape · Cultural intelligence · Regulatory notes
+- Expand any section to show the generated content
+
+### 4. Connect tab — lawyer matching (1m 30s)
+- Click **Connect** tab
+- AI-ranked list appears within ~1s (embedding + vector search + secondary scoring)
+- Expected top 3: **Isabella Reyes (~92% match)**, **Rodrigo Costa (~88%)**, **Klaus Weber (~84%)**
+- Each card shows: match score, matched jurisdiction flags with expertise stars, reputation tier
+- Click **Invite to Matter** on Isabella → button becomes "Invited ✓" + toast shows "+20 reputation points"
+- Repeat for Rodrigo and Klaus
+
+### 5. Flow tab — timezone routing (1m 30s)
+- Click **Flow** tab
+- Team availability timeline shows all 4 lawyers across timezones
+- Click **Route All Tasks** (or create a task, then route it) — routing engine assigns to the next-available qualified lawyer based on timezone and jurisdiction fit
+
+### 6. Lawyer profile — Isabella (1m)
+- Click Isabella's name anywhere she appears
+- Profile shows: jurisdiction matrix with expertise levels, matters count, reputation history (with the +30 from joining this matter), field notes authored
+
+### 7. Reputation leaderboard (1m)
+- Click **Reputation** in the sidebar
+- Chart shows reputation over time; event feed shows the fresh `match_accepted` / `matter_joined` events triggered in step 4
+- Scroll the leaderboard — Isabella is near the top; Marcus's score reflects the +20 points per invite
 
 ---
 
