@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -12,14 +12,47 @@ const updateTaskSchema = z.object({
   handoff_context: z.string().nullable().optional(),
 });
 
+async function getAuthenticatedLawyer() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) return null;
+
+  const service = createServiceClient();
+  const { data: lawyer } = await service
+    .from("lawyers")
+    .select("id, email")
+    .eq("email", user.email)
+    .maybeSingle();
+  return lawyer;
+}
+
+async function getTaskIfOnTeam(taskId: string, lawyerId: string) {
+  const service = createServiceClient();
+  const { data: task } = await service
+    .from("tasks")
+    .select("id, matter_id")
+    .eq("id", taskId)
+    .maybeSingle();
+  if (!task) return null;
+
+  const { data: membership } = await service
+    .from("matter_team")
+    .select("role")
+    .eq("matter_id", task.matter_id)
+    .eq("lawyer_id", lawyerId)
+    .maybeSingle();
+  return membership ? task : null;
+}
+
 // PATCH /api/flow/tasks/[id]
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const lawyer = await getAuthenticatedLawyer();
+  if (!lawyer) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
   const parsed = updateTaskSchema.safeParse(body);
@@ -27,7 +60,12 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  if (!(await getTaskIfOnTeam(params.id, lawyer.id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const service = createServiceClient();
+  const { data, error } = await service
     .from("tasks")
     .update(parsed.data)
     .eq("id", params.id)
@@ -43,11 +81,15 @@ export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const lawyer = await getAuthenticatedLawyer();
+  if (!lawyer) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data, error } = await supabase
+  if (!(await getTaskIfOnTeam(params.id, lawyer.id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const service = createServiceClient();
+  const { data, error } = await service
     .from("tasks")
     .select(`
       *,
