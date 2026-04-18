@@ -62,7 +62,7 @@ export default async function LawyerProfilePage({ params }: { params: { id: stri
   const events = eventsResult.data as ReputationEvent[];
 
   return (
-    <main className="flex-1 p-8 max-w-4xl">
+    <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl">
       {/* Back */}
       <Link
         href="/lawyers"

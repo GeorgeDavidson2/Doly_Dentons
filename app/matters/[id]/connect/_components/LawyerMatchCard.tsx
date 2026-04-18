@@ -177,7 +177,8 @@ export default function LawyerMatchCard({ match, matterId, alreadyOnTeam }: Prop
         className="w-full flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors
           disabled:cursor-not-allowed
           bg-brand-purple text-white hover:bg-brand-purple-dark
-          disabled:bg-gray-100 disabled:text-gray-400"
+          disabled:bg-gray-100 disabled:text-gray-400
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50 focus-visible:ring-offset-1"
       >
         {invited ? (
           <>

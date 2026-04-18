@@ -61,7 +61,7 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId }: Props) 
           >
             {/* Header row */}
             <button
-              className="w-full text-left px-4 py-3 flex items-center gap-3"
+              className="w-full text-left px-4 py-3 flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50"
               onClick={() => setExpandedId(isExpanded ? null : task.id)}
             >
               <StatusIcon className={`w-4 h-4 flex-shrink-0 ${status.color} ${task.status === "in_progress" ? "animate-spin" : ""}`} />
@@ -101,7 +101,7 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId }: Props) 
                     onRouteTask(task.id);
                   }}
                   disabled={isRouting}
-                  className="flex-shrink-0 text-xs font-medium px-3 py-1.5 bg-brand-purple text-white rounded-lg hover:bg-brand-purple-dark disabled:opacity-50 transition-colors"
+                  className="flex-shrink-0 text-xs font-medium px-3 py-1.5 bg-brand-purple text-white rounded-lg hover:bg-brand-purple-dark disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50 focus-visible:ring-offset-1"
                 >
                   {isRouting ? (
                     <span className="flex items-center gap-1.5">

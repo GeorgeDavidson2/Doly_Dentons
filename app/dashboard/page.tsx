@@ -169,7 +169,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
@@ -189,7 +189,7 @@ export default async function DashboardPage() {
           <Link
             key={label}
             href={href}
-            className="bg-white border border-brand-grey rounded-xl p-5 hover:shadow-sm transition-shadow"
+            className="bg-white border border-brand-grey rounded-xl p-5 hover:shadow-sm transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
           >
             <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center mb-3`}>
               <Icon className={`w-4.5 h-4.5 ${color}`} style={{ width: 18, height: 18 }} />

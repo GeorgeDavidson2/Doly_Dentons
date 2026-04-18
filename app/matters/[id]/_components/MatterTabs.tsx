@@ -14,7 +14,7 @@ export default function MatterTabs({ id }: { id: string }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-0 -mb-px">
+    <nav className="flex gap-0 -mb-px overflow-x-auto">
       {TABS.map((tab) => {
         const href = `/matters/${id}/${tab.segment}`;
         const active = pathname === href || pathname.startsWith(href + "/");
