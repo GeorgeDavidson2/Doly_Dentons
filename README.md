@@ -69,7 +69,7 @@ See [Environment Variables](#environment-variables) below for what each variable
 
 ### 4. Set up the database
 
-Apply each SQL file in `supabase/migrations/` in order, either via the Supabase CLI (`npx supabase db push`) or by pasting them into the Supabase SQL editor:
+Apply each SQL file in `supabase/migrations/` in order, either by pasting them into the Supabase SQL editor or by using `scripts/apply-migration.ts`:
 
 | File | Purpose |
 |---|---|
@@ -163,7 +163,7 @@ To restore the database to a clean demo state before a presentation:
 npm run demo:reset
 ```
 
-This clears Marcus's matters, tasks, team memberships, briefs, and reputation events, then reinstates the seeded lawyers, field notes, and reputation history. Runs in under 30 seconds. **Always run this immediately before a live demo.**
+This clears Marcus's matters, tasks, team memberships, briefs, field notes, and reputation events, then restores the seeded lawyers and seeded history for the other demo lawyers (Isabella, Klaus, Rodrigo, Sofia, etc.). Marcus's reputation is reset to the seed baseline; his `reputation_events` are not re-inserted. Runs in under 30 seconds. **Always run this immediately before a live demo.**
 
 ---
 
@@ -212,7 +212,7 @@ Run `npm run demo:reset` first so the database is in a predictable state.
 
 ### 7. Reputation leaderboard (1m)
 - Click **Reputation** in the sidebar
-- Chart shows reputation over time; event feed shows the fresh `match_accepted` / `matter_joined` events triggered in step 4
+- Chart shows reputation over time; in the leaderboard, select **Marcus** to see the fresh `match_accepted` event, then select **Isabella** to see the `matter_joined` event triggered in step 4
 - Scroll the leaderboard — Isabella is near the top; Marcus's score reflects the +20 points per invite
 
 ---
