@@ -155,7 +155,7 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
           <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
           <p className="text-sm text-gray-500 mt-1">Keep your expertise up to date to improve match quality</p>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3 flex-wrap">
           {saved && (
             <span className="flex items-center gap-1.5 text-sm text-green-600 font-medium whitespace-nowrap">
               <Check className="w-4 h-4 flex-shrink-0" /> Profile updated

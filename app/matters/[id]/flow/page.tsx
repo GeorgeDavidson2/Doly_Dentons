@@ -172,7 +172,7 @@ export default function FlowPage() {
             Route work across timezones — tasks are assigned to available lawyers automatically
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
           {unroutedCount > 0 && (
             <button
               onClick={handleRouteAll}
