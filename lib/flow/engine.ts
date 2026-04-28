@@ -12,8 +12,10 @@ export interface RouteTaskResult {
   handoff_id: string;
 }
 
+type RoutingLawyer = Pick<Lawyer, "id" | "full_name" | "title" | "office_city" | "office_country" | "timezone" | "reputation_score">;
+
 interface CandidateLawyer {
-  lawyer: Lawyer;
+  lawyer: RoutingLawyer;
   jurisdictions: { jurisdiction_code: string; expertise_level: number }[];
   availability: LawyerAvailability[];
 }
@@ -87,8 +89,7 @@ export async function routeTask(taskId: string): Promise<RouteTaskResult> {
       lawyer_id,
       lawyers (
         id, full_name, title, office_city, office_country, timezone,
-        languages, reputation_score, matters_count, contributions,
-        email, bio, avatar_url, embedding, created_at,
+        reputation_score,
         lawyer_jurisdictions (jurisdiction_code, expertise_level)
       )
     `)
@@ -104,7 +105,7 @@ export async function routeTask(taskId: string): Promise<RouteTaskResult> {
   const candidates: CandidateLawyer[] = [];
 
   for (const member of teamMembers as any[]) {
-    const lawyer = member.lawyers as Lawyer;
+    const lawyer = member.lawyers as RoutingLawyer;
     if (!lawyer) continue;
     const jurisdictions: { jurisdiction_code: string; expertise_level: number }[] =
       member.lawyers?.lawyer_jurisdictions ?? [];
@@ -126,10 +127,14 @@ export async function routeTask(taskId: string): Promise<RouteTaskResult> {
   }
 
   // 4. Batch-fetch availability for all candidates in one query
-  const { data: allAvailability } = await supabase
+  const { data: allAvailability, error: availabilityError } = await supabase
     .from("lawyer_availability")
     .select("*")
     .in("lawyer_id", candidates.map((c) => c.lawyer.id));
+
+  if (availabilityError) {
+    throw new Error(`Failed to load lawyer availability: ${availabilityError.message}`);
+  }
 
   const availabilityByLawyer = new Map<string, LawyerAvailability[]>();
   for (const a of (allAvailability ?? []) as LawyerAvailability[]) {
