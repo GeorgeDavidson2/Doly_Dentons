@@ -31,14 +31,17 @@ function InviteRow({
   onRespond,
 }: {
   invite: PendingInvite;
-  onRespond: (id: string, action: "accept" | "decline") => Promise<void>;
+  onRespond: (matterId: string, action: "accept" | "decline") => Promise<void>;
 }) {
   const [loading, setLoading] = useState<"accept" | "decline" | null>(null);
 
   async function handle(action: "accept" | "decline") {
     setLoading(action);
-    await onRespond(invite.matter_id, action);
-    setLoading(null);
+    try {
+      await onRespond(invite.matter_id, action);
+    } finally {
+      setLoading(null);
+    }
   }
 
   return (
@@ -85,7 +88,10 @@ export default function TopBar() {
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) setLastSeen(parseInt(stored, 10));
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      if (Number.isFinite(parsed)) setLastSeen(parsed);
+    }
   }, []);
 
   useEffect(() => {

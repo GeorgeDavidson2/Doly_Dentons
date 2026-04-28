@@ -109,6 +109,7 @@ export async function POST(
     .select("role")
     .eq("matter_id", params.id)
     .eq("lawyer_id", lawyer.id)
+    .eq("status", "accepted")
     .maybeSingle();
 
   if (!membership) {
@@ -218,7 +219,13 @@ export async function PATCH(
   }
 
   if (action === "decline") {
-    await service.from("matter_team").delete().eq("id", invite.id);
+    const { error: deleteError } = await service
+      .from("matter_team")
+      .delete()
+      .eq("id", invite.id);
+    if (deleteError) {
+      return NextResponse.json({ error: "Failed to decline invite" }, { status: 500 });
+    }
     return NextResponse.json({ status: "declined" });
   }
 
