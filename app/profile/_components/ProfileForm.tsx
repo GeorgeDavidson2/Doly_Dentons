@@ -150,21 +150,21 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
           <p className="text-sm text-gray-500 mt-1">Keep your expertise up to date to improve match quality</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {saved && (
-            <span className="flex items-center gap-1.5 text-sm text-green-600 font-medium">
-              <Check className="w-4 h-4" /> Profile updated
+            <span className="flex items-center gap-1.5 text-sm text-green-600 font-medium whitespace-nowrap">
+              <Check className="w-4 h-4 flex-shrink-0" /> Profile updated
             </span>
           )}
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-brand-purple text-white text-sm font-medium rounded-lg hover:bg-brand-purple-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-brand-purple text-white text-sm font-medium rounded-lg hover:bg-brand-purple-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
             {saving ? "Saving..." : "Save changes"}
           </button>
