@@ -103,7 +103,7 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId }: Props) 
                   type="button"
                   onClick={() => onRouteTask(task.id)}
                   disabled={isRouting}
-                  className="flex-shrink-0 text-xs font-medium px-3 py-1.5 bg-brand-purple text-white rounded-lg hover:bg-brand-purple-dark disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50 focus-visible:ring-offset-1"
+                  className="flex-shrink-0 text-xs font-medium px-3 py-1.5 bg-brand-purple text-white rounded-lg hover:bg-brand-purple-dark disabled:opacity-50 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50 focus-visible:ring-offset-1"
                 >
                   {isRouting ? (
                     <span className="flex items-center gap-1.5">
