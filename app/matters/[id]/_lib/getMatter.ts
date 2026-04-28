@@ -18,6 +18,7 @@ export type MatterDetail = {
   matter_team: {
     id: string;
     role: "lead" | "collaborator" | "reviewer";
+    status: "pending" | "accepted" | "declined";
     match_score: number | null;
     joined_at: string;
     lawyer: {
@@ -72,7 +73,7 @@ export const getMatterDetail = cache(async (id: string): Promise<MatterDetail | 
       id, title, description, client_name, matter_type, status, deadline, created_at,
       matter_jurisdictions(id, jurisdiction_code, jurisdiction_name),
       matter_team(
-        id, role, match_score, joined_at,
+        id, role, status, match_score, joined_at,
         lawyer:lawyers(id, full_name, title, office_city, office_country, reputation_score, avatar_url)
       ),
       context_briefs(id, jurisdiction_code, jurisdiction_name, status)

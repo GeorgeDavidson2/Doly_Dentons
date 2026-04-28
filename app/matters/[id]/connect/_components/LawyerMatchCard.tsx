@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Star } from "lucide-react";
 import { JURISDICTIONS } from "@/lib/jurisdictions";
 import type { EnrichedMatch } from "@/app/api/connect/match/route";
@@ -81,6 +82,7 @@ type Props = {
 };
 
 export default function LawyerMatchCard({ match, matterId, alreadyOnTeam }: Props) {
+  const router = useRouter();
   const [invited, setInvited] = useState(alreadyOnTeam);
   const [inviting, setInviting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -97,6 +99,7 @@ export default function LawyerMatchCard({ match, matterId, alreadyOnTeam }: Prop
         setInvited(true);
         setToast("+20 reputation points");
         setTimeout(() => setToast(null), 3000);
+        router.refresh();
       }
     } finally {
       setInviting(false);
