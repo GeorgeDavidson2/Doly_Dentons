@@ -42,6 +42,7 @@ async function getTaskIfOnTeam(taskId: string, lawyerId: string) {
     .select("role")
     .eq("matter_id", task.matter_id)
     .eq("lawyer_id", lawyerId)
+    .eq("status", "accepted")
     .maybeSingle();
   return membership ? task : null;
 }

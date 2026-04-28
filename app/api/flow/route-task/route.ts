@@ -48,6 +48,7 @@ export async function POST(request: Request) {
     .select("role")
     .eq("matter_id", task.matter_id)
     .eq("lawyer_id", lawyer.id)
+    .eq("status", "accepted")
     .maybeSingle();
   if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
