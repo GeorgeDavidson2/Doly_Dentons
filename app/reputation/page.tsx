@@ -21,6 +21,8 @@ export default function ReputationPage() {
   const router = useRouter();
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [currentLawyerId, setCurrentLawyerId] = useState<string | null>(null);
+  const [selfEntry, setSelfEntry] = useState<LeaderboardEntry | null>(null);
   const [loadingBoard, setLoadingBoard] = useState(true);
   const [boardError, setBoardError] = useState<string | null>(null);
 
@@ -43,7 +45,11 @@ export default function ReputationPage() {
       .then((data) => {
         if (!data) return;
         setLeaderboard(data.leaderboard ?? []);
-        if (data.leaderboard?.length) setSelectedId(data.leaderboard[0].id);
+        setCurrentLawyerId(data.current_lawyer_id ?? null);
+        setSelfEntry(data.self_entry ?? null);
+        // Auto-select current user, otherwise first entry
+        const autoSelect = data.current_lawyer_id ?? data.leaderboard?.[0]?.id ?? null;
+        if (autoSelect) setSelectedId(autoSelect);
       })
       .catch((err) => setBoardError(err.message))
       .finally(() => setLoadingBoard(false));
@@ -103,6 +109,8 @@ export default function ReputationPage() {
               leaderboard={leaderboard}
               selectedId={selectedId}
               onSelect={setSelectedId}
+              currentLawyerId={currentLawyerId}
+              selfEntry={selfEntry}
             />
           </div>
 
