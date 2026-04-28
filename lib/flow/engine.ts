@@ -80,59 +80,67 @@ export async function routeTask(taskId: string): Promise<RouteTaskResult> {
 
   const typedTask = task as Task;
 
-  // 2. Get matter team lawyers with matching jurisdiction
-  const teamQuery = supabase
+  // 2. Get accepted team lawyers with their jurisdiction expertise in one query
+  const { data: teamMembers, error: teamError } = await supabase
     .from("matter_team")
     .select(`
       lawyer_id,
       lawyers (
         id, full_name, title, office_city, office_country, timezone,
         languages, reputation_score, matters_count, contributions,
-        email, bio, avatar_url, embedding, created_at
-      ),
-      lawyer_jurisdictions: lawyers (
+        email, bio, avatar_url, embedding, created_at,
         lawyer_jurisdictions (jurisdiction_code, expertise_level)
       )
     `)
-    .eq("matter_id", typedTask.matter_id);
-
-  const { data: teamMembers, error: teamError } = await teamQuery;
+    .eq("matter_id", typedTask.matter_id)
+    .eq("status", "accepted");
 
   if (teamError || !teamMembers?.length) {
     throw new Error("No team members found for this matter");
   }
 
   // 3. Filter to lawyers with the required jurisdiction
+  const normalizedJurisdiction = typedTask.required_jurisdiction?.toUpperCase() ?? null;
   const candidates: CandidateLawyer[] = [];
 
   for (const member of teamMembers as any[]) {
     const lawyer = member.lawyers as Lawyer;
-    const jurisdictions = (lawyer as any).lawyer_jurisdictions ?? [];
+    if (!lawyer) continue;
+    const jurisdictions: { jurisdiction_code: string; expertise_level: number }[] =
+      member.lawyers?.lawyer_jurisdictions ?? [];
 
-    if (typedTask.required_jurisdiction) {
+    if (normalizedJurisdiction) {
       const hasJurisdiction = jurisdictions.some(
-        (j: any) => j.jurisdiction_code === typedTask.required_jurisdiction
+        (j) => j.jurisdiction_code.toUpperCase() === normalizedJurisdiction
       );
       if (!hasJurisdiction) continue;
     }
 
-    // 4. Fetch availability for this lawyer
-    const { data: availability } = await supabase
-      .from("lawyer_availability")
-      .select("*")
-      .eq("lawyer_id", lawyer.id);
-
-    candidates.push({
-      lawyer,
-      jurisdictions,
-      availability: (availability ?? []) as LawyerAvailability[],
-    });
+    candidates.push({ lawyer, jurisdictions, availability: [] });
   }
 
   if (!candidates.length) {
     throw new Error(
-      `No qualified lawyers found for jurisdiction: ${typedTask.required_jurisdiction}`
+      `No qualified lawyers found for jurisdiction: ${normalizedJurisdiction ?? "any"}`
     );
+  }
+
+  // 4. Batch-fetch availability for all candidates in one query
+  const { data: allAvailability } = await supabase
+    .from("lawyer_availability")
+    .select("*")
+    .in("lawyer_id", candidates.map((c) => c.lawyer.id));
+
+  const availabilityByLawyer = new Map<string, LawyerAvailability[]>();
+  for (const a of (allAvailability ?? []) as LawyerAvailability[]) {
+    if (!availabilityByLawyer.has(a.lawyer_id)) {
+      availabilityByLawyer.set(a.lawyer_id, []);
+    }
+    availabilityByLawyer.get(a.lawyer_id)!.push(a);
+  }
+
+  for (const c of candidates) {
+    c.availability = availabilityByLawyer.get(c.lawyer.id) ?? [];
   }
 
   // 5. Score candidates
@@ -143,9 +151,9 @@ export async function routeTask(taskId: string): Promise<RouteTaskResult> {
     const next = available ? null : nextAvailableAt(c.lawyer, c.availability, now);
 
     // Expertise level in the required jurisdiction
-    const jurisdictionExpertise = typedTask.required_jurisdiction
+    const jurisdictionExpertise = normalizedJurisdiction
       ? (c.jurisdictions.find(
-          (j) => j.jurisdiction_code === typedTask.required_jurisdiction
+          (j) => j.jurisdiction_code.toUpperCase() === normalizedJurisdiction
         )?.expertise_level ?? 0)
       : 3;
 
