@@ -58,6 +58,13 @@ export async function GET(request: Request) {
     });
   }
 
+  // Resolve current user's lawyer record
+  const { data: currentLawyer } = await supabase
+    .from("lawyers")
+    .select("id, full_name, office_city, office_country, reputation_score, avatar_url, matters_count")
+    .eq("email", user.email!)
+    .maybeSingle();
+
   // Leaderboard: top 20 by reputation_score, stable secondary sort by full_name
   const { data: leaderboard, error } = await supabase
     .from("lawyers")
@@ -73,5 +80,19 @@ export async function GET(request: Request) {
     rank: idx + 1,
   }));
 
-  return NextResponse.json({ leaderboard: enriched });
+  const current_lawyer_id = currentLawyer?.id ?? null;
+  const inTop20 = enriched.some((l) => l.id === current_lawyer_id);
+
+  // If current user is outside top 20, compute their real rank and include their full entry
+  let self_entry: (typeof enriched)[number] | null = null;
+  if (currentLawyer && !inTop20) {
+    const { count } = await supabase
+      .from("lawyers")
+      .select("*", { count: "exact", head: true })
+      .gt("reputation_score", currentLawyer.reputation_score);
+
+    self_entry = { ...currentLawyer, rank: (count ?? 0) + 1 };
+  }
+
+  return NextResponse.json({ leaderboard: enriched, current_lawyer_id, self_entry });
 }
