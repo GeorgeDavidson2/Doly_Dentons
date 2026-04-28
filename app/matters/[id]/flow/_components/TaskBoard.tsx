@@ -45,6 +45,8 @@ interface Props {
   onUpdateStatus: (taskId: string, status: TaskStatus) => Promise<void>;
 }
 
+
+
 function Initials({ name }: { name: string }) {
   const parts = name.trim().split(" ");
   return <>{parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : name[0]}</>;
@@ -52,6 +54,17 @@ function Initials({ name }: { name: string }) {
 
 export default function TaskBoard({ tasks, onRouteTask, routingTaskId, onUpdateStatus }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+
+  async function handleStatusClick(taskId: string, nextStatus: TaskStatus) {
+    if (updatingStatusId) return;
+    setUpdatingStatusId(taskId);
+    try {
+      await onUpdateStatus(taskId, nextStatus);
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  }
 
   if (!tasks.length) {
     return (
@@ -82,9 +95,10 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId, onUpdateS
               {/* Status toggle — separate from expand button */}
               <button
                 type="button"
-                title={STATUS_TOOLTIP[task.status as TaskStatus]}
-                onClick={() => void onUpdateStatus(task.id, NEXT_STATUS[task.status as TaskStatus])}
-                className="flex-shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50 hover:opacity-70 transition-opacity"
+                aria-label={STATUS_TOOLTIP[task.status as TaskStatus]}
+                disabled={updatingStatusId === task.id}
+                onClick={() => void handleStatusClick(task.id, NEXT_STATUS[task.status as TaskStatus])}
+                className="flex-shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50 hover:opacity-70 disabled:opacity-40 transition-opacity"
               >
                 <StatusIcon
                   className={`w-4 h-4 ${status.color} ${task.status === "in_progress" ? "animate-spin" : ""}`}

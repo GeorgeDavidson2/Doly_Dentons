@@ -104,6 +104,7 @@ export default function FlowPage() {
   };
 
   const handleUpdateStatus = async (taskId: string, status: TaskWithAssignee["status"]) => {
+    const previous = tasks;
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status } : t))
     );
@@ -114,11 +115,11 @@ export default function FlowPage() {
         body: JSON.stringify({ status }),
       });
       if (!res.ok) {
-        await fetchTasks();
+        setTasks(previous);
         showToast("error", "Failed to update task status");
       }
     } catch {
-      await fetchTasks();
+      setTasks(previous);
       showToast("error", "Failed to update task status");
     }
   };
