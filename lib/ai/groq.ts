@@ -56,7 +56,7 @@ Be specific and practical. Prioritise information a senior lawyer would need bef
 const REQUIRED_FIELDS = ["legal_landscape", "cultural_intelligence", "regulatory_notes"] as const;
 
 function parseBriefResponse(raw: string): BriefContent {
-  if (!raw) throw new Error("Groq returned an empty response");
+  if (!raw?.trim()) throw new Error("Groq returned an empty response");
 
   let parsed: unknown;
   try {
@@ -71,7 +71,9 @@ function parseBriefResponse(raw: string): BriefContent {
   }
 
   const obj = parsed as Record<string, unknown>;
-  const missing = REQUIRED_FIELDS.filter((k) => typeof obj[k] !== "string");
+  const missing = REQUIRED_FIELDS.filter(
+    (k) => typeof obj[k] !== "string" || (obj[k] as string).trim().length === 0
+  );
 
   if (missing.length > 0) {
     throw new Error(
