@@ -59,13 +59,19 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
       </div>
 
       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-        <span
-          className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
-            ROLE_STYLES[member.role] ?? ROLE_STYLES.collaborator
-          }`}
-        >
-          {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-        </span>
+        {member.status === "pending" ? (
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full border bg-gray-100 text-gray-500 border-gray-200">
+            Pending
+          </span>
+        ) : (
+          <span
+            className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+              ROLE_STYLES[member.role] ?? ROLE_STYLES.collaborator
+            }`}
+          >
+            {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+          </span>
+        )}
         <span className="text-[11px] text-gray-400">
           {lawyer.reputation_score.toLocaleString()} pts
         </span>
