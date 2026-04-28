@@ -126,7 +126,8 @@ export async function GET(req: Request) {
   const { data: teamRows, error: teamError } = await service
     .from("matter_team")
     .select("matter_id")
-    .eq("lawyer_id", lawyer.id);
+    .eq("lawyer_id", lawyer.id)
+    .eq("status", "accepted");
 
   if (teamError) {
     return NextResponse.json({ error: "Failed to load matters" }, { status: 500 });

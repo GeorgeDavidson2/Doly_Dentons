@@ -56,6 +56,7 @@ export async function POST(req: Request) {
     .select("role")
     .eq("matter_id", matter_id)
     .eq("lawyer_id", lawyer.id)
+    .eq("status", "accepted")
     .maybeSingle();
 
   if (membershipError || !membership) {

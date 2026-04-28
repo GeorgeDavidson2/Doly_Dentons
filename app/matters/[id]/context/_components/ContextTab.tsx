@@ -150,7 +150,7 @@ export default function ContextTab({ matterId, initialBriefs, jurisdictions }: P
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to generate briefs");
 
-      setBriefs(data.briefs as Brief[]);
+      setBriefs((data.briefs as Brief[]) ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setBriefs((prev) => prev.filter((b) => !b.id.startsWith("pending-")));
@@ -200,7 +200,7 @@ export default function ContextTab({ matterId, initialBriefs, jurisdictions }: P
       )}
 
       {/* Empty / preparing state */}
-      {briefs.length === 0 && !isGenerating && (
+      {briefs.length === 0 && !isGenerating && !error && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Sparkles className="w-8 h-8 text-brand-purple/40 mb-3" />
           <p className="text-sm font-medium text-gray-500">Preparing briefs…</p>
