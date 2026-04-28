@@ -56,6 +56,8 @@ Be specific and practical. Prioritise information a senior lawyer would need bef
 const REQUIRED_FIELDS = ["legal_landscape", "cultural_intelligence", "regulatory_notes"] as const;
 
 function parseBriefResponse(raw: string): BriefContent {
+  if (!raw?.trim()) throw new Error("Groq returned an empty response");
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -64,14 +66,16 @@ function parseBriefResponse(raw: string): BriefContent {
     throw new Error("Groq returned non-JSON content");
   }
 
-  const obj = parsed as Record<string, unknown>;
-  const missing = REQUIRED_FIELDS.filter((k) => typeof obj[k] !== "string");
+  if (typeof parsed !== "object" || parsed === null) {
+    throw new Error("Groq response is not a JSON object");
+  }
 
-  if (
-    typeof parsed !== "object" ||
-    parsed === null ||
-    missing.length > 0
-  ) {
+  const obj = parsed as Record<string, unknown>;
+  const missing = REQUIRED_FIELDS.filter(
+    (k) => typeof obj[k] !== "string" || (obj[k] as string).trim().length === 0
+  );
+
+  if (missing.length > 0) {
     throw new Error(
       `Groq response is missing required fields: ${missing.join(", ")}. Got keys: ${Object.keys(obj).join(", ")}`
     );
