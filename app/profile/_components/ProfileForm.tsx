@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, X, Check } from "lucide-react";
+import { Plus, X, Check, Pencil, CheckCircle2, AlertCircle } from "lucide-react";
 import type { Lawyer, LawyerJurisdiction, LawyerAvailability } from "@/types";
 
 const LANGUAGES = [
@@ -55,6 +55,10 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
   const [newJuris, setNewJuris] = useState<JurRow>({
     jurisdiction_code: "", jurisdiction_name: "", expertise_level: 3, matter_types: [], years_experience: 1,
   });
+  const [jurError, setJurError] = useState<string | null>(null);
+  const [editingCode, setEditingCode] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<JurRow | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<JurRow | null>(null);
 
   const [availability, setAvailability] = useState<AvailDay[]>(
     DAYS.map((day_name, day_of_week) => {
@@ -71,6 +75,12 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  function showToast(type: "success" | "error", message: string) {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3500);
+  }
 
   const completeness = useMemo(() => {
     let score = 0;
@@ -96,10 +106,56 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
 
   function addJurisdiction() {
     if (!newJuris.jurisdiction_code || !newJuris.jurisdiction_name) return;
-    if (jurisdictions.some((j) => j.jurisdiction_code === newJuris.jurisdiction_code)) return;
+    const dupCode = jurisdictions.some((j) => j.jurisdiction_code.toLowerCase() === newJuris.jurisdiction_code.toLowerCase());
+    const dupName = jurisdictions.some((j) => j.jurisdiction_name.toLowerCase() === newJuris.jurisdiction_name.toLowerCase());
+    if (dupCode || dupName) {
+      setJurError("This jurisdiction has already been added.");
+      return;
+    }
+    setJurError(null);
     setJurisdictions((prev) => [...prev, { ...newJuris }]);
     setNewJuris({ jurisdiction_code: "", jurisdiction_name: "", expertise_level: 3, matter_types: [], years_experience: 1 });
     setAddingJuris(false);
+    showToast("success", `${newJuris.jurisdiction_name} added.`);
+  }
+
+  function startEditJurisdiction(j: JurRow) {
+    setEditingCode(j.jurisdiction_code);
+    setEditValues({ ...j });
+    setAddingJuris(false);
+  }
+
+  function saveEditJurisdiction() {
+    if (!editValues) return;
+    setJurisdictions((prev) =>
+      prev.map((j) => j.jurisdiction_code === editingCode ? { ...editValues } : j)
+    );
+    setEditingCode(null);
+    setEditValues(null);
+    showToast("success", `${editValues.jurisdiction_name} updated.`);
+  }
+
+  function removeJurisdiction(j: JurRow) {
+    setConfirmRemove(j);
+  }
+
+  function confirmRemoveJurisdiction() {
+    if (!confirmRemove) return;
+    setJurisdictions((prev) => prev.filter((x) => x.jurisdiction_code !== confirmRemove.jurisdiction_code));
+    showToast("error", `${confirmRemove.jurisdiction_name} removed.`);
+    setConfirmRemove(null);
+  }
+
+  function toggleEditMatterType(type: string) {
+    setEditValues((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        matter_types: prev.matter_types.includes(type)
+          ? prev.matter_types.filter((t) => t !== type)
+          : [...prev.matter_types, type],
+      };
+    });
   }
 
   function updateAvailability(day_of_week: number, field: "enabled" | "work_start_hour" | "work_end_hour", value: boolean | number) {
@@ -149,6 +205,49 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
 
   return (
     <div>
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${
+          toast.type === "success"
+            ? "bg-green-50 border border-green-200 text-green-800"
+            : "bg-red-50 border border-red-200 text-red-800"
+        }`}>
+          {toast.type === "success"
+            ? <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+            : <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />}
+          {toast.message}
+        </div>
+      )}
+
+      {/* Confirm remove modal */}
+      {confirmRemove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmRemove(null)} />
+          <div className="relative bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Remove jurisdiction</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              Remove <span className="font-medium text-gray-900">{confirmRemove.jurisdiction_name} ({confirmRemove.jurisdiction_code})</span> from your profile? This cannot be undone.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmRemove(null)}
+                className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmRemoveJurisdiction}
+                className="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
         <div>
@@ -278,22 +377,116 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
         {jurisdictions.length > 0 && (
           <div className="space-y-2 mb-3">
             {jurisdictions.map((j) => (
-              <div key={j.jurisdiction_code} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <span className="text-xs font-semibold px-2 py-0.5 bg-brand-purple/10 text-brand-purple rounded border border-brand-purple/20 w-10 text-center flex-shrink-0">
-                  {j.jurisdiction_code}
-                </span>
-                <span className="text-sm text-gray-700 flex-1 truncate">{j.jurisdiction_name}</span>
-                <span className="text-xs text-amber-500 flex-shrink-0 tracking-tighter">
-                  {"★".repeat(j.expertise_level)}
-                  <span className="text-gray-200">{"★".repeat(5 - j.expertise_level)}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setJurisdictions((prev) => prev.filter((x) => x.jurisdiction_code !== j.jurisdiction_code))}
-                  className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+              <div key={j.jurisdiction_code}>
+                {editingCode === j.jurisdiction_code && editValues ? (
+                  /* ── Inline edit form ── */
+                  <div className="border border-brand-purple/30 rounded-lg p-4 space-y-3 bg-brand-purple/5">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Code</label>
+                        <input
+                          type="text"
+                          value={editValues.jurisdiction_code}
+                          disabled
+                          className="w-full px-3 py-2 rounded-lg border border-brand-grey text-sm bg-gray-100 text-gray-500 cursor-not-allowed"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                        <input
+                          type="text"
+                          value={editValues.jurisdiction_name}
+                          onChange={(e) => setEditValues((p) => p ? { ...p, jurisdiction_name: e.target.value } : p)}
+                          className="w-full px-3 py-2 rounded-lg border border-brand-grey text-sm focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-colors"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Expertise — {editValues.expertise_level}/5
+                        </label>
+                        <input
+                          type="range" min={1} max={5}
+                          value={editValues.expertise_level}
+                          onChange={(e) => setEditValues((p) => p ? { ...p, expertise_level: Number(e.target.value) as 1|2|3|4|5 } : p)}
+                          className="w-full accent-brand-purple"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Years experience</label>
+                        <input
+                          type="number" min={1} max={40}
+                          value={editValues.years_experience}
+                          onChange={(e) => setEditValues((p) => p ? { ...p, years_experience: Number(e.target.value) } : p)}
+                          className="w-full px-3 py-2 rounded-lg border border-brand-grey text-sm focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-colors"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-2">Matter types</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {MATTER_TYPES.map((type) => (
+                          <button
+                            key={type} type="button"
+                            onClick={() => toggleEditMatterType(type)}
+                            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                              editValues.matter_types.includes(type)
+                                ? "bg-brand-purple text-white border-brand-purple"
+                                : "bg-white text-gray-500 border-brand-grey hover:border-brand-purple"
+                            }`}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={saveEditJurisdiction}
+                        className="px-3 py-1.5 bg-brand-purple text-white text-xs font-medium rounded-lg hover:bg-brand-purple-dark transition-colors"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setEditingCode(null); setEditValues(null); }}
+                        className="px-3 py-1.5 text-gray-500 text-xs hover:text-gray-700 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Read row ── */
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <span className="text-xs font-semibold px-2 py-0.5 bg-brand-purple/10 text-brand-purple rounded border border-brand-purple/20 w-10 text-center flex-shrink-0">
+                      {j.jurisdiction_code}
+                    </span>
+                    <span className="text-sm text-gray-700 flex-1 truncate">{j.jurisdiction_name}</span>
+                    <span className="text-xs text-amber-500 flex-shrink-0 tracking-tighter">
+                      {"★".repeat(j.expertise_level)}
+                      <span className="text-gray-200">{"★".repeat(5 - j.expertise_level)}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => startEditJurisdiction(j)}
+                      className="text-gray-300 hover:text-brand-purple transition-colors flex-shrink-0"
+                      aria-label={`Edit ${j.jurisdiction_name}`}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeJurisdiction(j)}
+                      className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0"
+                      aria-label={`Remove ${j.jurisdiction_name}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -308,9 +501,14 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
                   type="text"
                   maxLength={5}
                   value={newJuris.jurisdiction_code}
-                  onChange={(e) => setNewJuris((p) => ({ ...p, jurisdiction_code: e.target.value.toUpperCase() }))}
+                  onChange={(e) => {
+                    setJurError(null);
+                    setNewJuris((p) => ({ ...p, jurisdiction_code: e.target.value.toUpperCase() }));
+                  }}
                   placeholder="BR"
-                  className="w-full px-3 py-2 rounded-lg border border-brand-grey text-sm focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-colors"
+                  className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 transition-colors ${
+                    jurError ? "border-red-400 focus:border-red-400 focus:ring-red-400/30" : "border-brand-grey focus:border-brand-purple focus:ring-brand-purple"
+                  }`}
                 />
               </div>
               <div>
@@ -324,6 +522,10 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
                 />
               </div>
             </div>
+
+            {jurError && (
+              <p className="text-xs text-red-500 -mt-1">{jurError}</p>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -383,7 +585,7 @@ export default function ProfileForm({ lawyer, jurisdictions: initialJur, availab
               </button>
               <button
                 type="button"
-                onClick={() => setAddingJuris(false)}
+                onClick={() => { setAddingJuris(false); setJurError(null); }}
                 className="px-3 py-1.5 text-gray-500 text-xs hover:text-gray-700 transition-colors"
               >
                 Cancel
