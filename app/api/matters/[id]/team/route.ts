@@ -48,6 +48,7 @@ export async function GET(
     .select("role")
     .eq("matter_id", params.id)
     .eq("lawyer_id", lawyer.id)
+    .eq("status", "accepted")
     .maybeSingle();
 
   if (!membership) {

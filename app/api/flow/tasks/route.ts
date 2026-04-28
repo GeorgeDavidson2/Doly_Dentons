@@ -39,6 +39,7 @@ async function isOnTeam(matterId: string, lawyerId: string) {
     .select("role")
     .eq("matter_id", matterId)
     .eq("lawyer_id", lawyerId)
+    .eq("status", "accepted")
     .maybeSingle();
   return !!data;
 }

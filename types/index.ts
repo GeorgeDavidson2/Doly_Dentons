@@ -63,6 +63,7 @@ export interface MatterTeamMember {
   matter_id: string;
   lawyer_id: string;
   role: "lead" | "collaborator" | "reviewer";
+  status: "pending" | "accepted" | "declined";
   match_score: number | null;
   joined_at: string;
   lawyer?: Lawyer;

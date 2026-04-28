@@ -64,7 +64,7 @@ export default function FlowPage() {
     if (res.ok) {
       const data = await res.json();
       const members: TeamMember[] = data
-        .filter((m: { lawyer?: Pick<Lawyer, "id" | "full_name" | "office_city" | "timezone"> | null }) => m.lawyer?.timezone)
+        .filter((m: { status?: string; lawyer?: Pick<Lawyer, "id" | "full_name" | "office_city" | "timezone"> | null }) => m.status === "accepted" && m.lawyer?.timezone)
         .map((m: { lawyer: Pick<Lawyer, "id" | "full_name" | "office_city" | "timezone"> }) => ({
           lawyer: m.lawyer,
           available_now: false, // TimezoneTimeline computes availability visually from the timeline
@@ -100,6 +100,26 @@ export default function FlowPage() {
       showToast("error", err instanceof Error ? err.message : "Routing failed");
     } finally {
       setRoutingTaskId(null);
+    }
+  };
+
+  const handleUpdateStatus = async (taskId: string, status: TaskWithAssignee["status"]) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status } : t))
+    );
+    try {
+      const res = await fetch(`/api/flow/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        await fetchTasks();
+        showToast("error", "Failed to update task status");
+      }
+    } catch {
+      await fetchTasks();
+      showToast("error", "Failed to update task status");
     }
   };
 
@@ -299,6 +319,7 @@ export default function FlowPage() {
           tasks={tasks}
           onRouteTask={handleRouteTask}
           routingTaskId={routingTaskId}
+          onUpdateStatus={handleUpdateStatus}
         />
       )}
     </div>

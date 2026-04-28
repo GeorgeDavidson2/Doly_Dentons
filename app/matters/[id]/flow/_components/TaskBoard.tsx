@@ -4,17 +4,33 @@ import { useState } from "react";
 import { Clock, User, AlertCircle, CheckCircle2, Loader2, Circle } from "lucide-react";
 import type { Task, Lawyer } from "@/types";
 
-const STATUS_CONFIG = {
-  pending: { label: "Pending", icon: Circle, color: "text-gray-400", bg: "bg-gray-50" },
-  in_progress: { label: "In Progress", icon: Loader2, color: "text-brand-purple", bg: "bg-brand-purple/5" },
-  completed: { label: "Completed", icon: CheckCircle2, color: "text-green-500", bg: "bg-green-50" },
-  blocked: { label: "Blocked", icon: AlertCircle, color: "text-red-500", bg: "bg-red-50" },
+type TaskStatus = "pending" | "in_progress" | "completed" | "blocked";
+
+const STATUS_CONFIG: Record<TaskStatus, { label: string; icon: React.ElementType; color: string; bg: string }> = {
+  pending:     { label: "Pending",     icon: Circle,       color: "text-gray-400",        bg: "bg-gray-50" },
+  in_progress: { label: "In Progress", icon: Loader2,      color: "text-brand-purple",    bg: "bg-brand-purple/5" },
+  completed:   { label: "Completed",   icon: CheckCircle2, color: "text-green-500",        bg: "bg-green-50" },
+  blocked:     { label: "Blocked",     icon: AlertCircle,  color: "text-red-500",          bg: "bg-red-50" },
+};
+
+const NEXT_STATUS: Record<TaskStatus, TaskStatus> = {
+  pending:     "in_progress",
+  in_progress: "completed",
+  completed:   "pending",
+  blocked:     "pending",
+};
+
+const STATUS_TOOLTIP: Record<TaskStatus, string> = {
+  pending:     "Mark as In Progress",
+  in_progress: "Mark as Completed",
+  completed:   "Reset to Pending",
+  blocked:     "Reset to Pending",
 };
 
 const PRIORITY_CONFIG = {
-  low: { label: "Low", color: "text-gray-400 bg-gray-100" },
+  low:    { label: "Low",    color: "text-gray-400 bg-gray-100" },
   medium: { label: "Medium", color: "text-yellow-600 bg-yellow-50" },
-  high: { label: "High", color: "text-orange-600 bg-orange-50" },
+  high:   { label: "High",   color: "text-orange-600 bg-orange-50" },
   urgent: { label: "Urgent", color: "text-red-600 bg-red-50" },
 };
 
@@ -26,6 +42,7 @@ interface Props {
   tasks: TaskWithAssignee[];
   onRouteTask: (taskId: string) => Promise<void>;
   routingTaskId: string | null;
+  onUpdateStatus: (taskId: string, status: TaskStatus) => Promise<void>;
 }
 
 function Initials({ name }: { name: string }) {
@@ -33,7 +50,7 @@ function Initials({ name }: { name: string }) {
   return <>{parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : name[0]}</>;
 }
 
-export default function TaskBoard({ tasks, onRouteTask, routingTaskId }: Props) {
+export default function TaskBoard({ tasks, onRouteTask, routingTaskId, onUpdateStatus }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (!tasks.length) {
@@ -48,8 +65,8 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId }: Props) 
   return (
     <div className="space-y-3">
       {tasks.map((task) => {
-        const status = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.pending;
-        const priority = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.medium;
+        const status = STATUS_CONFIG[task.status as TaskStatus] ?? STATUS_CONFIG.pending;
+        const priority = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.medium;
         const StatusIcon = status.icon;
         const isExpanded = expandedId === task.id;
         const isRouting = routingTaskId === task.id;
@@ -59,15 +76,28 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId }: Props) 
             key={task.id}
             className={`border rounded-xl transition-all ${status.bg} border-gray-200`}
           >
-            {/* Header row — toggle and Route are siblings to avoid nested <button> */}
+            {/* Header row */}
             <div className="px-4 py-3 flex items-center gap-3">
+
+              {/* Status toggle — separate from expand button */}
+              <button
+                type="button"
+                title={STATUS_TOOLTIP[task.status as TaskStatus]}
+                onClick={() => void onUpdateStatus(task.id, NEXT_STATUS[task.status as TaskStatus])}
+                className="flex-shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50 hover:opacity-70 transition-opacity"
+              >
+                <StatusIcon
+                  className={`w-4 h-4 ${status.color} ${task.status === "in_progress" ? "animate-spin" : ""}`}
+                />
+              </button>
+
+              {/* Expand toggle — title + meta only */}
               <button
                 type="button"
                 aria-expanded={isExpanded}
                 className="flex-1 min-w-0 text-left flex items-center gap-3 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50"
                 onClick={() => setExpandedId(isExpanded ? null : task.id)}
               >
-                <StatusIcon className={`w-4 h-4 flex-shrink-0 ${status.color} ${task.status === "in_progress" ? "animate-spin" : ""}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
@@ -101,7 +131,7 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId }: Props) 
               {(task.status === "pending" || !task.assignee) && (
                 <button
                   type="button"
-                  onClick={() => onRouteTask(task.id)}
+                  onClick={() => void onRouteTask(task.id)}
                   disabled={isRouting}
                   className="flex-shrink-0 text-xs font-medium px-3 py-1.5 bg-brand-purple text-white rounded-lg hover:bg-brand-purple-dark disabled:opacity-50 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50 focus-visible:ring-offset-1"
                 >
