@@ -59,11 +59,16 @@ export async function GET(request: Request) {
   }
 
   // Resolve current user's lawyer record
-  const { data: currentLawyer } = await supabase
-    .from("lawyers")
-    .select("id, full_name, office_city, office_country, reputation_score, avatar_url, matters_count")
-    .eq("email", user.email!)
-    .maybeSingle();
+  let currentLawyer: { id: string; full_name: string; office_city: string; office_country: string; reputation_score: number; avatar_url: string | null; matters_count: number } | null = null;
+  if (user.email) {
+    const { data, error: currentLawyerError } = await supabase
+      .from("lawyers")
+      .select("id, full_name, office_city, office_country, reputation_score, avatar_url, matters_count")
+      .eq("email", user.email)
+      .maybeSingle();
+    if (currentLawyerError) return NextResponse.json({ error: currentLawyerError.message }, { status: 500 });
+    currentLawyer = data;
+  }
 
   // Leaderboard: top 20 by reputation_score, stable secondary sort by full_name
   const { data: leaderboard, error } = await supabase
