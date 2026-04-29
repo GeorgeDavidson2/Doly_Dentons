@@ -25,11 +25,15 @@ function Initials({ name }: { name: string }) {
     : name[0];
 }
 
-// Only allow internal paths back to a matter or the directory.
-// Anything else falls through to the default "Back to directory" link.
+// Only allow internal paths back to a matter (with a canonical UUID and a
+// known tab segment) or the directory. Anything else falls through to the
+// default "Back to directory" link.
+const MATTER_PATH_RE =
+  /^\/matters\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/(overview|context|connect|flow))?$/i;
+
 function resolveBackLink(from: string | string[] | undefined): { href: string; label: string } {
   const raw = Array.isArray(from) ? from[0] : from;
-  if (raw && /^\/matters\/[0-9a-f-]+(\/[a-z0-9-]+)?$/i.test(raw)) {
+  if (raw && MATTER_PATH_RE.test(raw)) {
     return { href: raw, label: "Back to matter" };
   }
   return { href: "/lawyers", label: "Back to directory" };
