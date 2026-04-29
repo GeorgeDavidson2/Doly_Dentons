@@ -1,5 +1,6 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const updateTaskSchema = z.object({
@@ -82,6 +83,12 @@ export async function PATCH(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  revalidatePath("/dashboard");
+  if (data?.matter_id) {
+    revalidatePath(`/matters/${data.matter_id}/flow`);
+  }
+
   return NextResponse.json(data);
 }
 

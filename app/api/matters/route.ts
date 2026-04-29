@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getJurisdictionName } from "@/lib/jurisdictions";
@@ -100,6 +101,10 @@ export async function POST(req: Request) {
   // Context briefs are generated on demand from the Context tab UI via
   // POST /api/context/generate (issue #15). Not triggered here because
   // fire-and-forget is unreliable on Vercel Hobby (no waitUntil).
+
+  // Invalidate cached server pages that show matter counts/lists
+  revalidatePath("/dashboard");
+  revalidatePath("/matters");
 
   // Warm the Connect match cache non-blocking so the first Connect tab load is fast.
   void fetch(new URL("/api/connect/match", req.url).toString(), {
