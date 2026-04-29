@@ -123,7 +123,8 @@ export async function PATCH(
 
   revalidatePath("/dashboard");
   revalidatePath("/matters");
-  revalidatePath(`/matters/${params.id}`);
+  // "layout" invalidates the entire matter subtree (overview/context/connect/flow)
+  revalidatePath(`/matters/${params.id}`, "layout");
 
   return NextResponse.json(matter);
 }
