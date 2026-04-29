@@ -124,6 +124,32 @@ export default function FlowPage() {
     }
   };
 
+  const handleUpdateTask = async (
+    taskId: string,
+    updates: Partial<Pick<TaskWithAssignee, "title" | "description" | "priority" | "due_date">>
+  ): Promise<boolean> => {
+    const previous = tasks;
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
+    try {
+      const res = await fetch(`/api/flow/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) {
+        setTasks(previous);
+        showToast("error", "Failed to update task");
+        return false;
+      }
+      showToast("success", "Task updated");
+      return true;
+    } catch {
+      setTasks(previous);
+      showToast("error", "Failed to update task");
+      return false;
+    }
+  };
+
   const handleRouteAll = async () => {
     const unrouted = tasks.filter((t) => t.status === "pending" && !t.assigned_to);
     if (!unrouted.length) return;
@@ -321,6 +347,7 @@ export default function FlowPage() {
           onRouteTask={handleRouteTask}
           routingTaskId={routingTaskId}
           onUpdateStatus={handleUpdateStatus}
+          onUpdateTask={handleUpdateTask}
         />
       )}
     </div>

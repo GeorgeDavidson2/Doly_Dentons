@@ -37,7 +37,8 @@ const MATTER_IDS = {
   isabellaMatter1: "22222222-2222-2222-2222-222222222201",
   isabellaMatter2: "22222222-2222-2222-2222-222222222202",
   isabellaMatter3: "22222222-2222-2222-2222-222222222203",
-  klausMatter1:   "22222222-2222-2222-2222-222222222204",
+  klausMatter1:    "22222222-2222-2222-2222-222222222204",
+  marcusMatter1:   "22222222-2222-2222-2222-222222222205",
 };
 
 const NOTE_IDS = {
@@ -284,6 +285,7 @@ const COMPLETED_MATTERS = [
       { lawyer_id: LAWYERS.isabella, role: "lead" },
       { lawyer_id: LAWYERS.rodrigo, role: "collaborator" },
       { lawyer_id: LAWYERS.sofia, role: "collaborator" },
+      { lawyer_id: LAWYERS.marcus, role: "collaborator" },
     ],
   },
   {
@@ -339,6 +341,23 @@ const COMPLETED_MATTERS = [
     ],
     team: [
       { lawyer_id: LAWYERS.klaus, role: "lead" },
+    ],
+  },
+  {
+    id: MATTER_IDS.marcusMatter1,
+    title: "FlexCorp US Securities Filing 2024",
+    client_name: "FlexCorp Inc.",
+    matter_type: "Securities",
+    description: "S-1 filing and SEC review for FlexCorp's planned NYSE listing. Concluded after the client postponed the IPO to 2026 — matter archived for reference.",
+    status: "archived",
+    lead_lawyer_id: LAWYERS.marcus,
+    deadline: "2024-12-31T00:00:00Z",
+    created_at: daysAgo(220, 9, 0),
+    jurisdictions: [
+      { code: "US", name: "United States" },
+    ],
+    team: [
+      { lawyer_id: LAWYERS.marcus, role: "lead" },
     ],
   },
 ];
