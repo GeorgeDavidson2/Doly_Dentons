@@ -8,34 +8,57 @@ export type CurrentLawyer = {
   avatarUrl: string | null;
 };
 
+// Module-level cache + in-flight promise so multiple components mounting at
+// once (TopBar + Sidebar) share a single Supabase fetch instead of racing.
+let cached: CurrentLawyer | null = null;
+let inflight: Promise<CurrentLawyer | null> | null = null;
+
+async function fetchCurrentLawyer(): Promise<CurrentLawyer | null> {
+  if (cached) return cached;
+  if (inflight) return inflight;
+
+  inflight = (async () => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user?.email) return null;
+
+    const { data } = await supabase
+      .from("lawyers")
+      .select("full_name, avatar_url")
+      .eq("email", user.email)
+      .maybeSingle();
+    if (!data) return null;
+
+    cached = {
+      name: data.full_name as string,
+      avatarUrl: (data.avatar_url as string | null) ?? null,
+    };
+    return cached;
+  })().finally(() => {
+    inflight = null;
+  });
+
+  return inflight;
+}
+
 /**
  * Returns the logged-in user's lawyer profile (name + avatar) for header chrome.
  * Returns `null` while loading or if no matching lawyer row exists.
  *
- * Used by both the desktop TopBar and the mobile top bar in Sidebar so they
- * stay in sync without duplicate Supabase fetches.
+ * Backed by a module-level cache + in-flight promise dedup, so simultaneous
+ * mounts of TopBar and Sidebar share a single Supabase round-trip.
  */
 export function useCurrentLawyer(): CurrentLawyer | null {
-  const [lawyer, setLawyer] = useState<CurrentLawyer | null>(null);
+  const [lawyer, setLawyer] = useState<CurrentLawyer | null>(cached);
 
   useEffect(() => {
+    if (cached) return;
     let cancelled = false;
-    const supabase = createClient();
-
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (cancelled || !user?.email) return;
-      const { data } = await supabase
-        .from("lawyers")
-        .select("full_name, avatar_url")
-        .eq("email", user.email)
-        .maybeSingle();
-      if (cancelled || !data) return;
-      setLawyer({
-        name: data.full_name as string,
-        avatarUrl: (data.avatar_url as string | null) ?? null,
-      });
+    void fetchCurrentLawyer().then((result) => {
+      if (!cancelled && result) setLawyer(result);
     });
-
     return () => {
       cancelled = true;
     };
