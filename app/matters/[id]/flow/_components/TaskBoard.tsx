@@ -88,7 +88,7 @@ function EditTaskForm({
         title: title.trim(),
         description: description.trim(),
         priority,
-        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        due_date: dueDate || null,
       });
     } finally {
       setSaving(false);

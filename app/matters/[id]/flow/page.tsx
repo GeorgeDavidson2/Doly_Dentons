@@ -104,10 +104,13 @@ export default function FlowPage() {
   };
 
   const handleUpdateStatus = async (taskId: string, status: TaskWithAssignee["status"]) => {
-    const previous = tasks;
+    const prevTask = tasks.find((t) => t.id === taskId);
+    if (!prevTask) return;
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status } : t))
     );
+    const rollback = () =>
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? prevTask : t)));
     try {
       const res = await fetch(`/api/flow/tasks/${taskId}`, {
         method: "PATCH",
@@ -115,11 +118,11 @@ export default function FlowPage() {
         body: JSON.stringify({ status }),
       });
       if (!res.ok) {
-        setTasks(previous);
+        rollback();
         showToast("error", "Failed to update task status");
       }
     } catch {
-      setTasks(previous);
+      rollback();
       showToast("error", "Failed to update task status");
     }
   };
@@ -128,8 +131,11 @@ export default function FlowPage() {
     taskId: string,
     updates: Partial<Pick<TaskWithAssignee, "title" | "description" | "priority" | "due_date">>
   ): Promise<boolean> => {
-    const previous = tasks;
+    const prevTask = tasks.find((t) => t.id === taskId);
+    if (!prevTask) return false;
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
+    const rollback = () =>
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? prevTask : t)));
     try {
       const res = await fetch(`/api/flow/tasks/${taskId}`, {
         method: "PATCH",
@@ -137,14 +143,14 @@ export default function FlowPage() {
         body: JSON.stringify(updates),
       });
       if (!res.ok) {
-        setTasks(previous);
+        rollback();
         showToast("error", "Failed to update task");
         return false;
       }
       showToast("success", "Task updated");
       return true;
     } catch {
-      setTasks(previous);
+      rollback();
       showToast("error", "Failed to update task");
       return false;
     }

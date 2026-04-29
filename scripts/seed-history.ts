@@ -1,8 +1,8 @@
 /**
  * seed-history.ts
  *
- * Seeds reputation events, completed matters, and field notes for the top demo
- * lawyers so their profiles look credible on demo day.
+ * Seeds reputation events, historical matters (completed + archived), and field
+ * notes for the top demo lawyers so their profiles look credible on demo day.
  *
  * Idempotent — deletes existing seeded rows by stable UUIDs before re-inserting.
  *
@@ -263,9 +263,9 @@ const FIELD_NOTES = [
   },
 ];
 
-// ─── 2. Completed Matters ─────────────────────────────────────────────────────
+// ─── 2. Historical Matters (completed + archived) ────────────────────────────
 
-const COMPLETED_MATTERS = [
+const HISTORICAL_MATTERS = [
   {
     id: MATTER_IDS.isabellaMatter1,
     title: "Bancolombia LatAm Expansion 2025",
@@ -480,10 +480,10 @@ async function main() {
   await assertNoError("insert field_notes", notesError);
   log(`✓ ${FIELD_NOTES.length} field notes inserted.`);
 
-  // ── Completed matters ──────────────────────────────────────────────────────
-  log(`Inserting ${COMPLETED_MATTERS.length} completed matters...`);
+  // ── Historical matters (completed + archived) ──────────────────────────────
+  log(`Inserting ${HISTORICAL_MATTERS.length} historical matters...`);
 
-  for (const matter of COMPLETED_MATTERS) {
+  for (const matter of HISTORICAL_MATTERS) {
     const { jurisdictions, team, ...matterRow } = matter;
 
     const { error: matterError } = await supabase.from("matters").insert(matterRow);
@@ -504,7 +504,7 @@ async function main() {
     await assertNoError(`insert matter_team: ${matter.title}`, teamError);
   }
 
-  log(`✓ ${COMPLETED_MATTERS.length} completed matters inserted.`);
+  log(`✓ ${HISTORICAL_MATTERS.length} historical matters inserted.`);
 
   // ── Reputation events ──────────────────────────────────────────────────────
   log(`Inserting ${REPUTATION_EVENTS.length} reputation events...`);
@@ -516,7 +516,7 @@ async function main() {
   log("─────────────────────────────────────");
   log("Seed complete. Summary:");
   log(`  Field notes:        ${FIELD_NOTES.length} (Isabella: 5, Klaus: 4, Rodrigo: 3, Sofia: 2)`);
-  log(`  Completed matters:  ${COMPLETED_MATTERS.length} (Isabella: 3, Klaus: 1)`);
+  log(`  Historical matters: ${HISTORICAL_MATTERS.length} (Isabella: 3 completed, Klaus: 1 completed, Marcus: 1 archived)`);
   log(`  Reputation events:  ${REPUTATION_EVENTS.length}`);
   log("  Expected scores: Isabella 1,840 · Klaus 1,200 · Rodrigo 890");
   log("─────────────────────────────────────");
