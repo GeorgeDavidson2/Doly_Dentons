@@ -4,17 +4,10 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Bell, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useCurrentLawyer, getInitials } from "@/lib/hooks/useCurrentLawyer";
 import type { PendingInvite, ActivityEvent } from "@/app/api/notifications/route";
 
 const STORAGE_KEY = "bell_last_seen";
-
-function getInitials(name: string) {
-  const parts = name.trim().split(" ");
-  return parts.length >= 2
-    ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-    : name[0].toUpperCase();
-}
 
 function relativeTime(date: string): string {
   const diff = Date.now() - new Date(date).getTime();
@@ -78,8 +71,7 @@ function InviteRow({
 }
 
 export default function TopBar() {
-  const [name, setName] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const lawyer = useCurrentLawyer();
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [bellOpen, setBellOpen] = useState(false);
@@ -92,22 +84,6 @@ export default function TopBar() {
       const parsed = parseInt(stored, 10);
       if (Number.isFinite(parsed)) setLastSeen(parsed);
     }
-  }, []);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      const { data } = await supabase
-        .from("lawyers")
-        .select("full_name, avatar_url")
-        .eq("email", user.email)
-        .single();
-      if (data) {
-        setName(data.full_name);
-        setAvatarUrl(data.avatar_url ?? null);
-      }
-    });
   }, []);
 
   const fetchNotifications = useCallback(async () => {
@@ -162,7 +138,8 @@ export default function TopBar() {
     }
   }
 
-  if (!name) return null;
+  if (!lawyer) return null;
+  const { name, avatarUrl } = lawyer;
 
   const hasContent = invites.length > 0 || events.length > 0;
 
