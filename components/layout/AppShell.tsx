@@ -13,15 +13,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   if (isAuthPage) return <>{children}</>;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar />
       {/* Right side: top bar + page content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* TopBar is hidden on mobile (Sidebar handles the mobile header) */}
         <div className="hidden lg:block">
           <TopBar />
         </div>
         {/* pt-14 offsets the fixed mobile top bar on small screens */}
+        {/* Pages render their own <main> inside this scrollable wrapper */}
         <div className="flex-1 overflow-y-auto pt-14 lg:pt-0">
           {children}
         </div>

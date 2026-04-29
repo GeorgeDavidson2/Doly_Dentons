@@ -66,7 +66,7 @@ export default function Sidebar() {
   return (
     <>
       {/* ── Desktop sidebar (lg+) ─────────────────────────────────────── */}
-      <aside className="hidden lg:flex w-60 min-h-screen bg-brand-purple flex-col flex-shrink-0">
+      <aside className="hidden lg:flex w-60 h-screen bg-brand-purple flex-col flex-shrink-0">
         <div className="p-6 border-b border-white/10">
           <Logo />
         </div>
