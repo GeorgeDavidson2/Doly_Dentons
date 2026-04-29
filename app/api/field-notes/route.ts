@@ -38,15 +38,19 @@ async function getAuthenticatedLawyer() {
 
 // GET /api/field-notes?jurisdiction=CO&q=FDI
 export async function GET(req: Request) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const lawyer = await getAuthenticatedLawyer();
+  if (!lawyer) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const jurisdiction = searchParams.get("jurisdiction")?.trim().toUpperCase() || null;
-  const q = searchParams.get("q")?.trim() || null;
+  const rawQ = searchParams.get("q")?.trim() || null;
+  // Strip PostgREST `.or()` reserved chars and ilike wildcards so we don't break
+  // filter grammar or honor user-supplied wildcards.
+  const q = rawQ ? rawQ.replace(/[%_,()\\*]/g, " ").trim() : null;
 
-  let query = supabase
+  const service = createServiceClient();
+
+  let query = service
     .from("field_notes")
     .select("id, jurisdiction_code, jurisdiction_name, title, content, matter_type, upvotes, created_at, author_id, author:lawyers(id, full_name, office_city)")
     .eq("visibility", "firm")
@@ -57,10 +61,30 @@ export async function GET(req: Request) {
   if (jurisdiction) query = query.eq("jurisdiction_code", jurisdiction);
   if (q) query = query.or(`title.ilike.%${q}%,content.ilike.%${q}%`);
 
-  const { data, error } = await query;
+  const { data: notes, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json(data ?? []);
+  // Mark which of these notes the current lawyer has already upvoted
+  const noteIds = (notes ?? []).map((n) => n.id as string);
+  let upvotedSet = new Set<string>();
+  if (noteIds.length > 0) {
+    const { data: upvotedRows, error: upvotedError } = await service
+      .from("field_note_upvotes")
+      .select("note_id")
+      .eq("upvoter_id", lawyer.id)
+      .in("note_id", noteIds);
+    if (upvotedError) {
+      return NextResponse.json({ error: "Failed to load upvotes" }, { status: 500 });
+    }
+    upvotedSet = new Set((upvotedRows ?? []).map((r) => r.note_id as string));
+  }
+
+  const enriched = (notes ?? []).map((n) => ({
+    ...n,
+    has_upvoted: upvotedSet.has(n.id as string),
+  }));
+
+  return NextResponse.json(enriched);
 }
 
 // POST /api/field-notes — create note + award 40 pts to author

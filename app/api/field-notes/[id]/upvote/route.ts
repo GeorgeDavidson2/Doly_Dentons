@@ -50,6 +50,18 @@ export async function POST(
     return NextResponse.json({ error: "Cannot upvote your own note" }, { status: 400 });
   }
 
+  // Per-user uniqueness — composite PK (note_id, upvoter_id) raises 23505 on duplicate
+  const { error: trackError } = await service
+    .from("field_note_upvotes")
+    .insert({ note_id: noteId, upvoter_id: upvoter.id });
+
+  if (trackError) {
+    if (trackError.code === "23505") {
+      return NextResponse.json({ error: "You have already upvoted this note" }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Failed to record upvote" }, { status: 500 });
+  }
+
   // Increment the cosmetic upvote counter (service role bypasses author-only RLS)
   const { error: updateError } = await service
     .from("field_notes")
