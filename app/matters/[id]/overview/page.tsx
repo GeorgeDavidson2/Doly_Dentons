@@ -23,13 +23,13 @@ const ROLE_STYLES: Record<string, string> = {
 
 type TeamMember = MatterDetail["matter_team"][number];
 
-function TeamMemberCard({ member }: { member: TeamMember }) {
+function TeamMemberCard({ member, matterId }: { member: TeamMember; matterId: string }) {
   const lawyer = member.lawyer;
   if (!lawyer) return null;
 
   return (
     <Link
-      href={`/lawyers/${lawyer.id}`}
+      href={`/lawyers/${lawyer.id}?from=${encodeURIComponent(`/matters/${matterId}/overview`)}`}
       className="flex items-center gap-3 p-4 bg-white border border-brand-grey rounded-xl hover:border-brand-purple hover:shadow-sm transition-all group"
     >
       <div className="w-10 h-10 rounded-full bg-brand-purple/10 flex items-center justify-center flex-shrink-0">
@@ -163,7 +163,7 @@ export default async function MatterOverviewPage({
         </h2>
         <div className="space-y-2">
           {matter.matter_team.map((member) => (
-            <TeamMemberCard key={member.id} member={member} />
+            <TeamMemberCard key={member.id} member={member} matterId={matter.id} />
           ))}
         </div>
       </section>

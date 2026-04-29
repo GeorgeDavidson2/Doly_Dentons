@@ -25,8 +25,29 @@ function Initials({ name }: { name: string }) {
     : name[0];
 }
 
-export default async function LawyerProfilePage({ params }: { params: { id: string } }) {
+// Only allow internal paths back to a matter (with a canonical UUID and a
+// known tab segment) or the directory. Anything else falls through to the
+// default "Back to directory" link.
+const MATTER_PATH_RE =
+  /^\/matters\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/(overview|context|connect|flow))?$/i;
+
+function resolveBackLink(from: string | string[] | undefined): { href: string; label: string } {
+  const raw = Array.isArray(from) ? from[0] : from;
+  if (raw && MATTER_PATH_RE.test(raw)) {
+    return { href: raw, label: "Back to matter" };
+  }
+  return { href: "/lawyers", label: "Back to directory" };
+}
+
+export default async function LawyerProfilePage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams?: { from?: string | string[] };
+}) {
   const supabase = createClient();
+  const back = resolveBackLink(searchParams?.from);
 
   const [lawyerResult, jurisdictionsResult, eventsResult] = await Promise.all([
     supabase
@@ -65,11 +86,11 @@ export default async function LawyerProfilePage({ params }: { params: { id: stri
     <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl">
       {/* Back */}
       <Link
-        href="/lawyers"
+        href={back.href}
         className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to directory
+        {back.label}
       </Link>
 
       {/* Hero */}
