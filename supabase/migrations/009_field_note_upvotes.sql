@@ -11,3 +11,7 @@ CREATE TABLE IF NOT EXISTS field_note_upvotes (
 
 CREATE INDEX IF NOT EXISTS idx_field_note_upvotes_upvoter
   ON field_note_upvotes(upvoter_id);
+
+-- Lock down direct client access. All reads/writes go through API routes
+-- using the service role; no policies = deny all to authenticated/anon clients.
+ALTER TABLE field_note_upvotes ENABLE ROW LEVEL SECURITY;

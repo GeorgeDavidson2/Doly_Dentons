@@ -43,7 +43,10 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const jurisdiction = searchParams.get("jurisdiction")?.trim().toUpperCase() || null;
-  const q = searchParams.get("q")?.trim() || null;
+  const rawQ = searchParams.get("q")?.trim() || null;
+  // Strip PostgREST `.or()` reserved chars and ilike wildcards so we don't break
+  // filter grammar or honor user-supplied wildcards.
+  const q = rawQ ? rawQ.replace(/[%_,()\\*]/g, " ").trim() : null;
 
   const service = createServiceClient();
 
@@ -65,11 +68,14 @@ export async function GET(req: Request) {
   const noteIds = (notes ?? []).map((n) => n.id as string);
   let upvotedSet = new Set<string>();
   if (noteIds.length > 0) {
-    const { data: upvotedRows } = await service
+    const { data: upvotedRows, error: upvotedError } = await service
       .from("field_note_upvotes")
       .select("note_id")
       .eq("upvoter_id", lawyer.id)
       .in("note_id", noteIds);
+    if (upvotedError) {
+      return NextResponse.json({ error: "Failed to load upvotes" }, { status: 500 });
+    }
     upvotedSet = new Set((upvotedRows ?? []).map((r) => r.note_id as string));
   }
 

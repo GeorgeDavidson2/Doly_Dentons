@@ -6,6 +6,7 @@ import { Loader2, ChevronUp, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import type { FieldNote, Lawyer } from "@/types";
 import { JURISDICTIONS as ALL_JURISDICTIONS } from "@/lib/jurisdictions";
+import { REPUTATION_POINTS } from "@/lib/reputation/points";
 
 type NoteWithAuthor = Pick<
   FieldNote,
@@ -15,9 +16,13 @@ type NoteWithAuthor = Pick<
   has_upvoted: boolean;
 };
 
+// Built once at module scope — O(1) flag lookup per render
+const FLAG_MAP = new Map<string, string>(ALL_JURISDICTIONS.map((j) => [j.code, j.flag]));
 function getFlag(code: string): string {
-  return ALL_JURISDICTIONS.find((j) => j.code === code)?.flag ?? "";
+  return FLAG_MAP.get(code) ?? "";
 }
+
+const UPVOTE_REWARD = REPUTATION_POINTS.note_upvoted;
 
 const JURISDICTIONS = [
   { code: "BR", name: "Brazil" },
@@ -199,7 +204,7 @@ function FieldNotesContent() {
                 <button
                   onClick={() => handleUpvote(note.id)}
                   disabled={upvoting === note.id || note.has_upvoted}
-                  title={note.has_upvoted ? "You upvoted this note" : "Upvoting awards the author +10 reputation"}
+                  title={note.has_upvoted ? "You upvoted this note" : `Upvoting awards the author +${UPVOTE_REWARD} reputation`}
                   className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors flex-shrink-0 ${
                     note.has_upvoted
                       ? "border-brand-purple/40 bg-brand-purple/10 cursor-default"
@@ -208,7 +213,7 @@ function FieldNotesContent() {
                   aria-label={
                     note.has_upvoted
                       ? `You upvoted this note (${note.upvotes} votes)`
-                      : `Upvote — author earns +10 reputation (${note.upvotes} votes)`
+                      : `Upvote — author earns +${UPVOTE_REWARD} reputation (${note.upvotes} votes)`
                   }
                 >
                   {upvoting === note.id ? (
