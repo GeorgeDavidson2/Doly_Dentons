@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Users, Briefcase, FileText, Award, LogOut, Menu, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useCurrentLawyer, getInitials } from "@/lib/hooks/useCurrentLawyer";
 
 const navItems = [
   { href: "/dashboard",   label: "Dashboard",   icon: LayoutDashboard },
@@ -54,6 +56,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const lawyer = useCurrentLawyer();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   async function handleSignOut() {
@@ -88,8 +91,24 @@ export default function Sidebar() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-brand-purple flex items-center justify-between px-4 h-14 border-b border-white/10">
         <Logo />
         <div className="flex items-center gap-2">
-          <Link href="/profile" className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
-            <span className="text-white text-xs font-semibold">Me</span>
+          <Link
+            href="/profile"
+            aria-label="My profile"
+            className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center overflow-hidden hover:bg-white/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          >
+            {lawyer?.avatarUrl ? (
+              <Image
+                src={lawyer.avatarUrl}
+                alt={lawyer.name}
+                width={28}
+                height={28}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-white text-xs font-semibold">
+                {lawyer ? getInitials(lawyer.name) : ""}
+              </span>
+            )}
           </Link>
           <button
             onClick={() => setMobileOpen(true)}
