@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
@@ -175,6 +176,11 @@ export async function POST(
     ]);
   }
 
+  revalidatePath("/dashboard");
+  revalidatePath("/matters");
+  // "layout" invalidates the entire matter subtree (overview/context/connect/flow)
+  revalidatePath(`/matters/${params.id}`, "layout");
+
   return NextResponse.json(newMember, { status: 201 });
 }
 
@@ -227,6 +233,8 @@ export async function PATCH(
     if (deleteError) {
       return NextResponse.json({ error: "Failed to decline invite" }, { status: 500 });
     }
+    revalidatePath("/dashboard");
+    revalidatePath("/matters");
     return NextResponse.json({ status: "declined" });
   }
 
@@ -261,6 +269,10 @@ export async function PATCH(
         .eq("id", lawyer.id),
     ]);
   }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/matters");
+  revalidatePath(`/matters/${params.id}`, "layout");
 
   return NextResponse.json({ status: "accepted" });
 }

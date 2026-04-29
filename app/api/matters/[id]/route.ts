@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
@@ -119,6 +120,11 @@ export async function PATCH(
   if (error || !matter) {
     return NextResponse.json({ error: "Failed to update matter" }, { status: 500 });
   }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/matters");
+  // "layout" invalidates the entire matter subtree (overview/context/connect/flow)
+  revalidatePath(`/matters/${params.id}`, "layout");
 
   return NextResponse.json(matter);
 }
