@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, User, AlertCircle, CheckCircle2, Loader2, Circle } from "lucide-react";
+import { Clock, User, AlertCircle, CheckCircle2, Loader2, Circle, Pencil } from "lucide-react";
 import type { Task, Lawyer } from "@/types";
+
+type TaskUpdate = {
+  title?: string;
+  description?: string;
+  priority?: keyof typeof PRIORITY_CONFIG;
+  due_date?: string | null;
+};
 
 type TaskStatus = "pending" | "in_progress" | "completed" | "blocked";
 
@@ -43,6 +50,7 @@ interface Props {
   onRouteTask: (taskId: string) => Promise<void>;
   routingTaskId: string | null;
   onUpdateStatus: (taskId: string, status: TaskStatus) => Promise<void>;
+  onUpdateTask: (taskId: string, updates: TaskUpdate) => Promise<boolean>;
 }
 
 
@@ -52,9 +60,113 @@ function Initials({ name }: { name: string }) {
   return <>{parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : name[0]}</>;
 }
 
-export default function TaskBoard({ tasks, onRouteTask, routingTaskId, onUpdateStatus }: Props) {
+function EditTaskForm({
+  task,
+  onCancel,
+  onSave,
+}: {
+  task: TaskWithAssignee;
+  onCancel: () => void;
+  onSave: (updates: TaskUpdate) => Promise<void>;
+}) {
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description ?? "");
+  const [priority, setPriority] = useState<keyof typeof PRIORITY_CONFIG>(
+    (task.priority as keyof typeof PRIORITY_CONFIG) ?? "medium"
+  );
+  const [dueDate, setDueDate] = useState(
+    task.due_date ? task.due_date.slice(0, 10) : ""
+  );
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim() || saving) return;
+    setSaving(true);
+    try {
+      await onSave({
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        due_date: dueDate || null,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-3 bg-white rounded-b-xl"
+    >
+      <div>
+        <label className="block text-[11px] font-medium text-gray-500 mb-1">Title *</label>
+        <input
+          type="text"
+          required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-purple/40"
+        />
+      </div>
+      <div>
+        <label className="block text-[11px] font-medium text-gray-500 mb-1">Description</label>
+        <textarea
+          rows={2}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-purple/40 resize-none"
+        />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-[11px] font-medium text-gray-500 mb-1">Priority</label>
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as keyof typeof PRIORITY_CONFIG)}
+            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-purple/40 bg-white"
+          >
+            {(Object.keys(PRIORITY_CONFIG) as (keyof typeof PRIORITY_CONFIG)[]).map((p) => (
+              <option key={p} value={p}>{PRIORITY_CONFIG[p].label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-gray-500 mb-1">Due date</label>
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-purple/40"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          type="submit"
+          disabled={saving || !title.trim()}
+          className="text-xs font-medium px-3 py-1.5 bg-brand-purple text-white rounded-lg hover:bg-brand-purple-dark disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="text-xs font-medium px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export default function TaskBoard({ tasks, onRouteTask, routingTaskId, onUpdateStatus, onUpdateTask }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function handleStatusClick(taskId: string, nextStatus: TaskStatus) {
     if (updatingStatusId) return;
@@ -162,7 +274,7 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId, onUpdateS
             </div>
 
             {/* Expanded detail */}
-            {isExpanded && (
+            {isExpanded && editingId !== task.id && (
               <div className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-3">
                 {task.description && (
                   <p className="text-sm text-gray-600">{task.description}</p>
@@ -195,7 +307,29 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId, onUpdateS
                     </div>
                   </div>
                 )}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditingId(task.id)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-brand-purple transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    Edit task
+                  </button>
+                </div>
               </div>
+            )}
+
+            {/* Inline edit form */}
+            {isExpanded && editingId === task.id && (
+              <EditTaskForm
+                task={task}
+                onCancel={() => setEditingId(null)}
+                onSave={async (updates) => {
+                  const ok = await onUpdateTask(task.id, updates);
+                  if (ok) setEditingId(null);
+                }}
+              />
             )}
           </div>
         );

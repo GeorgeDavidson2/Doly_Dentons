@@ -104,10 +104,13 @@ export default function FlowPage() {
   };
 
   const handleUpdateStatus = async (taskId: string, status: TaskWithAssignee["status"]) => {
-    const previous = tasks;
+    const prevTask = tasks.find((t) => t.id === taskId);
+    if (!prevTask) return;
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status } : t))
     );
+    const rollback = () =>
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? prevTask : t)));
     try {
       const res = await fetch(`/api/flow/tasks/${taskId}`, {
         method: "PATCH",
@@ -115,12 +118,41 @@ export default function FlowPage() {
         body: JSON.stringify({ status }),
       });
       if (!res.ok) {
-        setTasks(previous);
+        rollback();
         showToast("error", "Failed to update task status");
       }
     } catch {
-      setTasks(previous);
+      rollback();
       showToast("error", "Failed to update task status");
+    }
+  };
+
+  const handleUpdateTask = async (
+    taskId: string,
+    updates: Partial<Pick<TaskWithAssignee, "title" | "description" | "priority" | "due_date">>
+  ): Promise<boolean> => {
+    const prevTask = tasks.find((t) => t.id === taskId);
+    if (!prevTask) return false;
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
+    const rollback = () =>
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? prevTask : t)));
+    try {
+      const res = await fetch(`/api/flow/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) {
+        rollback();
+        showToast("error", "Failed to update task");
+        return false;
+      }
+      showToast("success", "Task updated");
+      return true;
+    } catch {
+      rollback();
+      showToast("error", "Failed to update task");
+      return false;
     }
   };
 
@@ -321,6 +353,7 @@ export default function FlowPage() {
           onRouteTask={handleRouteTask}
           routingTaskId={routingTaskId}
           onUpdateStatus={handleUpdateStatus}
+          onUpdateTask={handleUpdateTask}
         />
       )}
     </div>
