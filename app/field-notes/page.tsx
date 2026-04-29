@@ -5,11 +5,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ChevronUp, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import type { FieldNote, Lawyer } from "@/types";
+import { JURISDICTIONS as ALL_JURISDICTIONS } from "@/lib/jurisdictions";
 
 type NoteWithAuthor = Pick<
   FieldNote,
   "id" | "jurisdiction_code" | "jurisdiction_name" | "title" | "content" | "matter_type" | "upvotes" | "created_at" | "author_id"
-> & { author: Pick<Lawyer, "id" | "full_name" | "office_city"> | null };
+> & {
+  author: Pick<Lawyer, "id" | "full_name" | "office_city"> | null;
+  has_upvoted: boolean;
+};
+
+function getFlag(code: string): string {
+  return ALL_JURISDICTIONS.find((j) => j.code === code)?.flag ?? "";
+}
 
 const JURISDICTIONS = [
   { code: "BR", name: "Brazil" },
@@ -85,6 +93,13 @@ function FieldNotesContent() {
     setUpvoting(noteId);
     try {
       const res = await fetch(`/api/field-notes/${noteId}/upvote`, { method: "POST" });
+      if (res.status === 409) {
+        // Already upvoted — flip local state to match server truth
+        setNotes((prev) =>
+          prev.map((n) => (n.id === noteId ? { ...n, has_upvoted: true } : n))
+        );
+        return;
+      }
       if (res.status === 400) {
         const body = await res.json();
         alert(body.error);
@@ -93,7 +108,7 @@ function FieldNotesContent() {
       if (!res.ok) return;
       const { upvotes } = await res.json();
       setNotes((prev) =>
-        prev.map((n) => (n.id === noteId ? { ...n, upvotes } : n))
+        prev.map((n) => (n.id === noteId ? { ...n, upvotes, has_upvoted: true } : n))
       );
     } finally {
       setUpvoting(null);
@@ -167,11 +182,15 @@ function FieldNotesContent() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <span
-                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                       JURISDICTION_COLORS[note.jurisdiction_code] ?? "bg-gray-100 text-gray-600"
                     }`}
                   >
-                    {note.jurisdiction_name}
+                    <span aria-hidden="true">{getFlag(note.jurisdiction_code)}</span>
+                    <span>{note.jurisdiction_code}</span>
+                    {note.jurisdiction_name && (
+                      <span className="opacity-75">· {note.jurisdiction_name}</span>
+                    )}
                   </span>
                   <h3 className="font-semibold text-gray-900 text-sm mt-2 leading-snug">
                     {note.title}
@@ -179,14 +198,23 @@ function FieldNotesContent() {
                 </div>
                 <button
                   onClick={() => handleUpvote(note.id)}
-                  disabled={upvoting === note.id}
-                  className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border border-gray-200 hover:border-brand-purple/40 hover:bg-brand-purple/5 transition-colors disabled:opacity-50 flex-shrink-0"
-                  aria-label={`Upvote: ${note.upvotes} votes`}
+                  disabled={upvoting === note.id || note.has_upvoted}
+                  title={note.has_upvoted ? "You upvoted this note" : "Upvoting awards the author +10 reputation"}
+                  className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors flex-shrink-0 ${
+                    note.has_upvoted
+                      ? "border-brand-purple/40 bg-brand-purple/10 cursor-default"
+                      : "border-gray-200 hover:border-brand-purple/40 hover:bg-brand-purple/5"
+                  } disabled:opacity-50`}
+                  aria-label={
+                    note.has_upvoted
+                      ? `You upvoted this note (${note.upvotes} votes)`
+                      : `Upvote — author earns +10 reputation (${note.upvotes} votes)`
+                  }
                 >
                   {upvoting === note.id ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-purple" />
                   ) : (
-                    <ChevronUp className="w-3.5 h-3.5 text-brand-purple" />
+                    <ChevronUp className={`w-3.5 h-3.5 text-brand-purple ${note.has_upvoted ? "fill-current" : ""}`} />
                   )}
                   <span className="text-[11px] font-semibold text-brand-purple">{note.upvotes}</span>
                 </button>
