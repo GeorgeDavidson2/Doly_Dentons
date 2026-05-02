@@ -73,12 +73,13 @@ export async function POST(
     return NextResponse.json({ error: "Failed to record upvote" }, { status: 500 });
   }
 
-  // Award points to the AUTHOR — atomic cap enforced by award_upvote_points RPC
+  // Award points to the AUTHOR — atomic cap enforced by award_upvote_points RPC.
+  // Title omitted — reputation_events.description is publicly readable via RLS,
+  // so we rely on the generic defaultDescription. Note linkage stays via source_id.
   await awardPoints({
     lawyer_id: note.author_id,
     event_type: "note_upvoted",
     source_id: noteId,
-    description: `Field note upvoted: ${note.title}`,
   });
 
   // Invalidate dashboard activity feed and field-notes list

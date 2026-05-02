@@ -224,12 +224,13 @@ export async function routeTask(taskId: string): Promise<RouteTaskResult> {
     throw new Error(`Failed to create handoff: ${handoffError?.message}`);
   }
 
-  // 8. Award reputation points to receiving lawyer
+  // 8. Award reputation points to receiving lawyer.
+  // Title omitted — reputation_events.description is publicly readable via RLS,
+  // so we rely on the generic defaultDescription. Task linkage stays via matter_id.
   await awardPoints({
     lawyer_id: winner.lawyer.id,
     event_type: "handoff_completed",
     matter_id: typedTask.matter_id,
-    description: `Task routed by Flow engine: ${typedTask.title}`,
   });
 
   // 9. Invalidate cached server pages that reflect task / activity counts
