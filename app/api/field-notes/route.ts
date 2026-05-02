@@ -67,9 +67,13 @@ export async function GET(req: Request) {
   const { data: notes, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Mark which of these notes the current lawyer has already upvoted
+  // Mark which of these notes the current lawyer has already upvoted.
+  // If the upvotes table is missing/unreachable we degrade gracefully — notes
+  // still render — but we surface `upvote_disabled` so the UI can disable the
+  // upvote action (POST would also fail in that state).
   const noteIds = (notes ?? []).map((n) => n.id as string);
   let upvotedSet = new Set<string>();
+  let upvoteCheckFailed = false;
   if (noteIds.length > 0) {
     const { data: upvotedRows, error: upvotedError } = await service
       .from("field_note_upvotes")
@@ -77,9 +81,10 @@ export async function GET(req: Request) {
       .eq("upvoter_id", lawyer.id)
       .in("note_id", noteIds);
     if (upvotedError) {
-      // Degrade gracefully — notes still render, upvote buttons show as un-voted.
-      // Avoids breaking the whole page if the upvotes table is missing or RLS blocks reads.
+      // Service client bypasses RLS, so this is most commonly a missing
+      // `field_note_upvotes` table (migration 009 not applied) or a connectivity issue.
       console.error("Failed to load upvote status:", upvotedError.message);
+      upvoteCheckFailed = true;
     } else {
       upvotedSet = new Set((upvotedRows ?? []).map((r) => r.note_id as string));
     }
@@ -88,6 +93,7 @@ export async function GET(req: Request) {
   const enriched = (notes ?? []).map((n) => ({
     ...n,
     has_upvoted: upvotedSet.has(n.id as string),
+    upvote_disabled: upvoteCheckFailed,
   }));
 
   return NextResponse.json(enriched);
