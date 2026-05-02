@@ -29,6 +29,7 @@ export default function FlowPage() {
 
   const [tasks, setTasks] = useState<TaskWithAssignee[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [matterJurisdictions, setMatterJurisdictions] = useState<{ jurisdiction_code: string; jurisdiction_name: string }[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [routingTaskId, setRoutingTaskId] = useState<string | null>(null);
   const [routingAll, setRoutingAll] = useState(false);
@@ -73,10 +74,19 @@ export default function FlowPage() {
     }
   }, [matterId]);
 
+  const fetchMatterJurisdictions = useCallback(async () => {
+    const res = await fetch(`/api/matters/${matterId}`);
+    if (res.ok) {
+      const data = await res.json();
+      setMatterJurisdictions(data.matter_jurisdictions ?? []);
+    }
+  }, [matterId]);
+
   useEffect(() => {
     fetchTasks();
     fetchTeam();
-  }, [fetchTasks, fetchTeam]);
+    fetchMatterJurisdictions();
+  }, [fetchTasks, fetchTeam, fetchMatterJurisdictions]);
 
   const handleRouteTask = async (taskId: string) => {
     setRoutingTaskId(taskId);
@@ -301,13 +311,18 @@ export default function FlowPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Jurisdiction</label>
-                <input
-                  type="text"
+                <select
                   value={form.required_jurisdiction}
                   onChange={(e) => setForm((f) => ({ ...f, required_jurisdiction: e.target.value }))}
-                  placeholder="e.g. BR, DE, CO"
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-purple/40"
-                />
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-purple/40 bg-white"
+                >
+                  <option value="">Any jurisdiction</option>
+                  {matterJurisdictions.map((j) => (
+                    <option key={j.jurisdiction_code} value={j.jurisdiction_code}>
+                      {j.jurisdiction_name} ({j.jurisdiction_code})
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Due Date</label>
