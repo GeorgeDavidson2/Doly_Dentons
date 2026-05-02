@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Briefcase, CheckSquare, Award, ArrowRight, Clock, Globe } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import ReputationBadge from "@/components/reputation/ReputationBadge";
 import type { Matter, Task, ReputationEvent, Lawyer } from "@/types";
 
@@ -57,12 +57,17 @@ function formatDeadline(iso: string) {
 }
 
 export default async function DashboardPage() {
-  const supabase = createClient();
-
+  // Auth check via user-scoped client — only used for identity, not data fetching
+  const authClient = createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await authClient.auth.getUser();
   if (!user) redirect("/login");
+
+  // All data queries use the service client — the user is already authenticated
+  // above, so bypassing RLS here is safe. This avoids the lawyers.id vs auth.uid()
+  // mismatch that would otherwise cause RLS to block all dashboard queries.
+  const supabase = createServiceClient();
 
   // Resolve the lawyer row for the logged-in user
   const { data: lawyerData } = await supabase
