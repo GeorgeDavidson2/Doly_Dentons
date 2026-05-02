@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, ChevronUp, Plus, Search } from "lucide-react";
+import { Loader2, ChevronUp, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import type { FieldNote, Lawyer } from "@/types";
 import { JURISDICTIONS as ALL_JURISDICTIONS } from "@/lib/jurisdictions";
@@ -62,6 +62,20 @@ function FieldNotesContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [upvoting, setUpvoting] = useState<string | null>(null);
+  // Track by id (not the full object) so the modal stays in sync when the
+  // parent notes array updates after an upvote.
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const selectedNote = selectedNoteId ? notes.find((n) => n.id === selectedNoteId) ?? null : null;
+
+  // Close modal on Escape
+  useEffect(() => {
+    if (!selectedNoteId) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setSelectedNoteId(null);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selectedNoteId]);
 
   const jurisdiction = searchParams.get("jurisdiction") || "";
   const q = searchParams.get("q") || "";
@@ -184,7 +198,17 @@ function FieldNotesContent() {
           {notes.map((note) => (
             <div
               key={note.id}
-              className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-3"
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelectedNoteId(note.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelectedNoteId(note.id);
+                }
+              }}
+              aria-label={`Open note: ${note.title}`}
+              className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-3 cursor-pointer hover:border-brand-purple/40 hover:shadow-sm transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
             >
               {/* Top row */}
               <div className="flex items-start justify-between gap-3">
@@ -205,7 +229,14 @@ function FieldNotesContent() {
                   </h3>
                 </div>
                 <button
-                  onClick={() => handleUpvote(note.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleUpvote(note.id);
+                  }}
+                  onKeyDown={(e) => {
+                    // Stop Enter/Space from bubbling and triggering the card's open handler
+                    if (e.key === "Enter" || e.key === " ") e.stopPropagation();
+                  }}
                   disabled={upvoting === note.id || note.has_upvoted || !!note.upvote_disabled}
                   title={
                     note.upvote_disabled
@@ -248,6 +279,91 @@ function FieldNotesContent() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Detail modal */}
+      {selectedNote && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="note-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+          onClick={() => setSelectedNoteId(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[85vh] flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-3 border-b border-gray-100">
+              <div className="flex-1 min-w-0">
+                <span
+                  className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                    JURISDICTION_COLORS[selectedNote.jurisdiction_code] ?? "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  <span aria-hidden="true">{getFlag(selectedNote.jurisdiction_code)}</span>
+                  <span>{selectedNote.jurisdiction_code}</span>
+                  {selectedNote.jurisdiction_name && (
+                    <span className="opacity-75">· {selectedNote.jurisdiction_name}</span>
+                  )}
+                </span>
+                <h2 id="note-modal-title" className="font-semibold text-gray-900 text-base mt-2 leading-snug">
+                  {selectedNote.title}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => void handleUpvote(selectedNote.id)}
+                  disabled={upvoting === selectedNote.id || selectedNote.has_upvoted || !!selectedNote.upvote_disabled}
+                  title={
+                    selectedNote.upvote_disabled
+                      ? "Upvotes are temporarily unavailable"
+                      : selectedNote.has_upvoted
+                      ? "You upvoted this note"
+                      : `Upvoting awards the author +${UPVOTE_REWARD} reputation`
+                  }
+                  className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
+                    selectedNote.has_upvoted
+                      ? "border-brand-purple/40 bg-brand-purple/10 cursor-default"
+                      : "border-gray-200 hover:border-brand-purple/40 hover:bg-brand-purple/5"
+                  } disabled:opacity-50`}
+                >
+                  {upvoting === selectedNote.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-purple" />
+                  ) : (
+                    <ChevronUp
+                      className={`w-3.5 h-3.5 text-brand-purple ${selectedNote.has_upvoted ? "fill-current" : ""}`}
+                    />
+                  )}
+                  <span className="text-[11px] font-semibold text-brand-purple">{selectedNote.upvotes}</span>
+                </button>
+                <button
+                  onClick={() => setSelectedNoteId(null)}
+                  aria-label="Close"
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-4 overflow-y-auto">
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                {selectedNote.content}
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between text-[11px] text-gray-400 px-6 py-3 border-t border-gray-100">
+              <span>
+                {selectedNote.author?.full_name ?? "Unknown"} · {selectedNote.author?.office_city}
+              </span>
+              <span>{relativeTime(selectedNote.created_at)}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>
