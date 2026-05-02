@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ChevronUp, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
@@ -66,16 +66,27 @@ function FieldNotesContent() {
   // parent notes array updates after an upvote.
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const selectedNote = selectedNoteId ? notes.find((n) => n.id === selectedNoteId) ?? null : null;
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Close modal on Escape
+  // Close modal on Escape and focus the close button when it opens.
   useEffect(() => {
     if (!selectedNoteId) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setSelectedNoteId(null);
     }
     document.addEventListener("keydown", onKey);
+    // Move focus into the dialog so screen readers announce it and Tab moves within
+    closeButtonRef.current?.focus();
     return () => document.removeEventListener("keydown", onKey);
   }, [selectedNoteId]);
+
+  // If the selected note disappears from the list (refetch / filter change),
+  // clear the selection so the modal closes cleanly and doesn't reopen later.
+  useEffect(() => {
+    if (selectedNoteId && !notes.some((n) => n.id === selectedNoteId)) {
+      setSelectedNoteId(null);
+    }
+  }, [notes, selectedNoteId]);
 
   const jurisdiction = searchParams.get("jurisdiction") || "";
   const q = searchParams.get("q") || "";
@@ -196,19 +207,13 @@ function FieldNotesContent() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {notes.map((note) => (
+            // Outer card is a non-interactive container. The title `<button>`
+            // below carries an `inset-0` overlay span so the whole card area
+            // is clickable, while the upvote button (with `relative z-10`)
+            // stays interactive without nested-interactive HTML.
             <div
               key={note.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => setSelectedNoteId(note.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setSelectedNoteId(note.id);
-                }
-              }}
-              aria-label={`Open note: ${note.title}`}
-              className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-3 cursor-pointer hover:border-brand-purple/40 hover:shadow-sm transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
+              className="relative bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-3 hover:border-brand-purple/40 hover:shadow-sm transition-shadow"
             >
               {/* Top row */}
               <div className="flex items-start justify-between gap-3">
@@ -225,18 +230,21 @@ function FieldNotesContent() {
                     )}
                   </span>
                   <h3 className="font-semibold text-gray-900 text-sm mt-2 leading-snug">
-                    {note.title}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedNoteId(note.id)}
+                      className="text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
+                      aria-label={`Open note: ${note.title}`}
+                    >
+                      {/* Full-card click overlay — covers the entire card; upvote button
+                          uses `relative z-10` to remain on top and intercept its clicks. */}
+                      <span className="absolute inset-0" aria-hidden="true" />
+                      {note.title}
+                    </button>
                   </h3>
                 </div>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleUpvote(note.id);
-                  }}
-                  onKeyDown={(e) => {
-                    // Stop Enter/Space from bubbling and triggering the card's open handler
-                    if (e.key === "Enter" || e.key === " ") e.stopPropagation();
-                  }}
+                  onClick={() => void handleUpvote(note.id)}
                   disabled={upvoting === note.id || note.has_upvoted || !!note.upvote_disabled}
                   title={
                     note.upvote_disabled
@@ -245,7 +253,7 @@ function FieldNotesContent() {
                       ? "You upvoted this note"
                       : `Upvoting awards the author +${UPVOTE_REWARD} reputation`
                   }
-                  className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors flex-shrink-0 ${
+                  className={`relative z-10 flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors flex-shrink-0 ${
                     note.has_upvoted
                       ? "border-brand-purple/40 bg-brand-purple/10 cursor-default"
                       : "border-gray-200 hover:border-brand-purple/40 hover:bg-brand-purple/5"
@@ -324,6 +332,13 @@ function FieldNotesContent() {
                       ? "You upvoted this note"
                       : `Upvoting awards the author +${UPVOTE_REWARD} reputation`
                   }
+                  aria-label={
+                    selectedNote.upvote_disabled
+                      ? `Upvotes are temporarily unavailable (${selectedNote.upvotes} votes)`
+                      : selectedNote.has_upvoted
+                      ? `You upvoted this note (${selectedNote.upvotes} votes)`
+                      : `Upvote — author earns +${UPVOTE_REWARD} reputation (${selectedNote.upvotes} votes)`
+                  }
                   className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors ${
                     selectedNote.has_upvoted
                       ? "border-brand-purple/40 bg-brand-purple/10 cursor-default"
@@ -340,6 +355,7 @@ function FieldNotesContent() {
                   <span className="text-[11px] font-semibold text-brand-purple">{selectedNote.upvotes}</span>
                 </button>
                 <button
+                  ref={closeButtonRef}
                   onClick={() => setSelectedNoteId(null)}
                   aria-label="Close"
                   className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/40"
