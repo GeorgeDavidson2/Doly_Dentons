@@ -52,7 +52,10 @@ export async function GET(req: Request) {
 
   let query = service
     .from("field_notes")
-    .select("id, jurisdiction_code, jurisdiction_name, title, content, matter_type, upvotes, created_at, author_id, author:lawyers(id, full_name, office_city)")
+    // Explicit FK — `field_note_upvotes` (added in migration 009) introduces a
+   // junction path between field_notes and lawyers, making `lawyers(...)`
+   // ambiguous and 500-ing the query. Naming the constraint forces the direct FK.
+    .select("id, jurisdiction_code, jurisdiction_name, title, content, matter_type, upvotes, created_at, author_id, author:lawyers!field_notes_author_id_fkey(id, full_name, office_city)")
     .eq("visibility", "firm")
     .order("upvotes", { ascending: false })
     .order("created_at", { ascending: false })
@@ -74,9 +77,12 @@ export async function GET(req: Request) {
       .eq("upvoter_id", lawyer.id)
       .in("note_id", noteIds);
     if (upvotedError) {
-      return NextResponse.json({ error: "Failed to load upvotes" }, { status: 500 });
+      // Degrade gracefully — notes still render, upvote buttons show as un-voted.
+      // Avoids breaking the whole page if the upvotes table is missing or RLS blocks reads.
+      console.error("Failed to load upvote status:", upvotedError.message);
+    } else {
+      upvotedSet = new Set((upvotedRows ?? []).map((r) => r.note_id as string));
     }
-    upvotedSet = new Set((upvotedRows ?? []).map((r) => r.note_id as string));
   }
 
   const enriched = (notes ?? []).map((n) => ({
