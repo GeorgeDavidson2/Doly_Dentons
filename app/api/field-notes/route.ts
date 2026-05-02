@@ -52,7 +52,10 @@ export async function GET(req: Request) {
 
   let query = service
     .from("field_notes")
-    .select("id, jurisdiction_code, jurisdiction_name, title, content, matter_type, upvotes, created_at, author_id, author:lawyers(id, full_name, office_city)")
+    // Explicit FK — `field_note_upvotes` (added in migration 009) introduces a
+   // junction path between field_notes and lawyers, making `lawyers(...)`
+   // ambiguous and 500-ing the query. Naming the constraint forces the direct FK.
+    .select("id, jurisdiction_code, jurisdiction_name, title, content, matter_type, upvotes, created_at, author_id, author:lawyers!field_notes_author_id_fkey(id, full_name, office_city)")
     .eq("visibility", "firm")
     .order("upvotes", { ascending: false })
     .order("created_at", { ascending: false })
@@ -64,9 +67,13 @@ export async function GET(req: Request) {
   const { data: notes, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Mark which of these notes the current lawyer has already upvoted
+  // Mark which of these notes the current lawyer has already upvoted.
+  // If the upvotes table is missing/unreachable we degrade gracefully — notes
+  // still render — but we surface `upvote_disabled` so the UI can disable the
+  // upvote action (POST would also fail in that state).
   const noteIds = (notes ?? []).map((n) => n.id as string);
   let upvotedSet = new Set<string>();
+  let upvoteCheckFailed = false;
   if (noteIds.length > 0) {
     const { data: upvotedRows, error: upvotedError } = await service
       .from("field_note_upvotes")
@@ -74,14 +81,19 @@ export async function GET(req: Request) {
       .eq("upvoter_id", lawyer.id)
       .in("note_id", noteIds);
     if (upvotedError) {
-      return NextResponse.json({ error: "Failed to load upvotes" }, { status: 500 });
+      // Service client bypasses RLS, so this is most commonly a missing
+      // `field_note_upvotes` table (migration 009 not applied) or a connectivity issue.
+      console.error("Failed to load upvote status:", upvotedError.message);
+      upvoteCheckFailed = true;
+    } else {
+      upvotedSet = new Set((upvotedRows ?? []).map((r) => r.note_id as string));
     }
-    upvotedSet = new Set((upvotedRows ?? []).map((r) => r.note_id as string));
   }
 
   const enriched = (notes ?? []).map((n) => ({
     ...n,
     has_upvoted: upvotedSet.has(n.id as string),
+    upvote_disabled: upvoteCheckFailed,
   }));
 
   return NextResponse.json(enriched);

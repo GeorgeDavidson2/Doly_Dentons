@@ -14,6 +14,9 @@ type NoteWithAuthor = Pick<
 > & {
   author: Pick<Lawyer, "id" | "full_name" | "office_city"> | null;
   has_upvoted: boolean;
+  // True when the server couldn't determine upvote state (e.g. migration 009
+  // missing on the live DB). Disable the upvote action — POST would also fail.
+  upvote_disabled?: boolean;
 };
 
 // Built once at module scope — O(1) flag lookup per render
@@ -203,15 +206,23 @@ function FieldNotesContent() {
                 </div>
                 <button
                   onClick={() => handleUpvote(note.id)}
-                  disabled={upvoting === note.id || note.has_upvoted}
-                  title={note.has_upvoted ? "You upvoted this note" : `Upvoting awards the author +${UPVOTE_REWARD} reputation`}
+                  disabled={upvoting === note.id || note.has_upvoted || !!note.upvote_disabled}
+                  title={
+                    note.upvote_disabled
+                      ? "Upvotes are temporarily unavailable"
+                      : note.has_upvoted
+                      ? "You upvoted this note"
+                      : `Upvoting awards the author +${UPVOTE_REWARD} reputation`
+                  }
                   className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border transition-colors flex-shrink-0 ${
                     note.has_upvoted
                       ? "border-brand-purple/40 bg-brand-purple/10 cursor-default"
                       : "border-gray-200 hover:border-brand-purple/40 hover:bg-brand-purple/5"
                   } disabled:opacity-50`}
                   aria-label={
-                    note.has_upvoted
+                    note.upvote_disabled
+                      ? `Upvotes are temporarily unavailable (${note.upvotes} votes)`
+                      : note.has_upvoted
                       ? `You upvoted this note (${note.upvotes} votes)`
                       : `Upvote — author earns +${UPVOTE_REWARD} reputation (${note.upvotes} votes)`
                   }
