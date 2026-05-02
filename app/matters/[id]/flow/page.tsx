@@ -75,10 +75,10 @@ export default function FlowPage() {
   }, [matterId]);
 
   const fetchMatterJurisdictions = useCallback(async () => {
-    const res = await fetch(`/api/matters/${matterId}`);
+    const res = await fetch(`/api/matters/${matterId}/jurisdictions`);
     if (res.ok) {
       const data = await res.json();
-      setMatterJurisdictions(data.matter_jurisdictions ?? []);
+      setMatterJurisdictions(data ?? []);
     }
   }, [matterId]);
 
