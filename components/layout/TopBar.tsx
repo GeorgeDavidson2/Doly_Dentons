@@ -79,12 +79,22 @@ export default function TopBar() {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [bellOpen, setBellOpen] = useState(false);
   const [lastSeen, setLastSeen] = useState<number>(0);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; variant: "success" | "error" } | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fetchInflightRef = useRef(false);
 
-  const showToast = useCallback((message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3500);
+  const showToast = useCallback((message: string, variant: "success" | "error" = "success") => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, variant });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
+  }, []);
+
+  // Clear any pending toast timer on unmount to avoid setting state after unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -96,11 +106,20 @@ export default function TopBar() {
   }, []);
 
   const fetchNotifications = useCallback(async () => {
-    const res = await fetch("/api/notifications");
-    if (res.ok) {
-      const data = await res.json();
-      setInvites(data.invites ?? []);
-      setEvents(data.events ?? []);
+    // Drop overlapping polls — slow request shouldn't be clobbered by a faster
+    // newer one returning out of order. `cache: "no-store"` prevents the browser
+    // from serving a cached response from a previous tick.
+    if (fetchInflightRef.current) return;
+    fetchInflightRef.current = true;
+    try {
+      const res = await fetch("/api/notifications", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setInvites(data.invites ?? []);
+        setEvents(data.events ?? []);
+      }
+    } finally {
+      fetchInflightRef.current = false;
     }
   }, []);
 
@@ -142,23 +161,39 @@ export default function TopBar() {
 
   async function handleRespond(matterId: string, action: "accept" | "decline") {
     const matter = invites.find((i) => i.matter_id === matterId);
-    const res = await fetch(`/api/matters/${matterId}/team`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    if (res.ok) {
-      // Remove invite from list and re-fetch events to pick up new rep event on accept
-      setInvites((prev) => prev.filter((i) => i.matter_id !== matterId));
-      if (action === "accept") {
-        showToast(`You joined ${matter?.matter_title ?? "the matter"}`);
-        await fetchNotifications();
-        // Refresh server-rendered pages (matters list, dashboard) so new
-        // membership shows without a hard reload (#98).
-        router.refresh();
-      } else {
-        showToast("Invite declined");
+    let res: Response;
+    try {
+      res = await fetch(`/api/matters/${matterId}/team`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+    } catch {
+      showToast("Could not reach the server", "error");
+      return;
+    }
+    if (!res.ok) {
+      const fallback = action === "accept" ? "Couldn't accept invite" : "Couldn't decline invite";
+      let message = fallback;
+      try {
+        const body = await res.json();
+        if (typeof body?.error === "string") message = body.error;
+      } catch {
+        // ignore — keep fallback message
       }
+      showToast(message, "error");
+      return;
+    }
+    // Remove invite from list and re-fetch events to pick up new rep event on accept
+    setInvites((prev) => prev.filter((i) => i.matter_id !== matterId));
+    if (action === "accept") {
+      showToast(`You joined ${matter?.matter_title ?? "the matter"}`);
+      await fetchNotifications();
+      // Refresh server-rendered pages (matters list, dashboard) so new
+      // membership shows without a hard reload (#98).
+      router.refresh();
+    } else {
+      showToast("Invite declined");
     }
   }
 
@@ -169,11 +204,29 @@ export default function TopBar() {
 
   return (
     <div className="relative h-14 flex items-center justify-end gap-3 px-6 border-b border-gray-100 bg-white flex-shrink-0">
-      {/* Toast — accept/decline confirmation */}
+      {/* Toast — accept/decline confirmation. role=status + aria-live so SRs announce. */}
       {toast && (
-        <div className="absolute top-3 right-6 z-50 flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg shadow-sm">
-          <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <span className="text-xs font-medium text-green-700">{toast}</span>
+        <div
+          role="status"
+          aria-live="polite"
+          className={`absolute top-3 right-6 z-50 flex items-center gap-2 px-3 py-2 border rounded-lg shadow-sm ${
+            toast.variant === "error"
+              ? "bg-red-50 border-red-200"
+              : "bg-green-50 border-green-200"
+          }`}
+        >
+          <CheckCircle2
+            className={`w-4 h-4 flex-shrink-0 ${
+              toast.variant === "error" ? "text-red-600" : "text-green-600"
+            }`}
+          />
+          <span
+            className={`text-xs font-medium ${
+              toast.variant === "error" ? "text-red-700" : "text-green-700"
+            }`}
+          >
+            {toast.message}
+          </span>
         </div>
       )}
 
