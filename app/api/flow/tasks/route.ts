@@ -109,7 +109,7 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   revalidatePath(`/matters/${parsed.data.matter_id}/flow`);
 
   return NextResponse.json(data, { status: 201 });

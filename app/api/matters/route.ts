@@ -103,7 +103,7 @@ export async function POST(req: Request) {
   // fire-and-forget is unreliable on Vercel Hobby (no waitUntil).
 
   // Invalidate cached server pages that show matter counts/lists
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/matters");
 
   // Warm the Connect match cache non-blocking so the first Connect tab load is fast.

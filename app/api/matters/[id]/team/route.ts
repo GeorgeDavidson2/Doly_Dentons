@@ -176,7 +176,7 @@ export async function POST(
     ]);
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/matters");
   // "layout" invalidates the entire matter subtree (overview/context/connect/flow)
   revalidatePath(`/matters/${params.id}`, "layout");
@@ -233,7 +233,7 @@ export async function PATCH(
     if (deleteError) {
       return NextResponse.json({ error: "Failed to decline invite" }, { status: 500 });
     }
-    revalidatePath("/dashboard");
+    revalidatePath("/dashboard", "layout");
     revalidatePath("/matters");
     return NextResponse.json({ status: "declined" });
   }
@@ -270,7 +270,7 @@ export async function PATCH(
     ]);
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/matters");
   revalidatePath(`/matters/${params.id}`, "layout");
 

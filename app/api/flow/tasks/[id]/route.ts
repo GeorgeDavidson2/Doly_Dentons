@@ -84,7 +84,7 @@ export async function PATCH(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   if (data?.matter_id) {
     revalidatePath(`/matters/${data.matter_id}/flow`);
   }

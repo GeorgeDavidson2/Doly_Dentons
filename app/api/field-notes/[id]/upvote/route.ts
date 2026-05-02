@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { awardPoints } from "@/lib/reputation/awards";
@@ -79,6 +80,10 @@ export async function POST(
     source_id: noteId,
     description: `Field note upvoted: ${note.title}`,
   });
+
+  // Invalidate dashboard activity feed and field-notes list
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/field-notes");
 
   return NextResponse.json({ upvotes: note.upvotes + 1 });
 }

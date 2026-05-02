@@ -1,5 +1,6 @@
 import { toZonedTime } from "date-fns-tz";
 import { isWeekend, getHours } from "date-fns";
+import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { awardPoints } from "@/lib/reputation/awards";
 import type { Task, Lawyer, LawyerAvailability } from "@/types";
@@ -230,6 +231,10 @@ export async function routeTask(taskId: string): Promise<RouteTaskResult> {
     matter_id: typedTask.matter_id,
     description: `Task routed by Flow engine: ${typedTask.title}`,
   });
+
+  // 9. Invalidate cached server pages that reflect task / activity counts
+  revalidatePath("/dashboard", "layout");
+  revalidatePath(`/matters/${typedTask.matter_id}/flow`);
 
   return {
     assigned_to: winner.lawyer.id,
