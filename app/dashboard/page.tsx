@@ -5,6 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import ReputationBadge from "@/components/reputation/ReputationBadge";
 import type { Matter, Task, ReputationEvent, Lawyer } from "@/types";
 
+// Safety net: even if a mutation forgets to call revalidatePath, the dashboard
+// re-fetches at least every 60 seconds.
+export const revalidate = 60;
+
 const EVENT_LABELS: Record<ReputationEvent["event_type"], string> = {
   matter_joined:      "Joined a matter",
   brief_generated:    "Generated jurisdiction brief",

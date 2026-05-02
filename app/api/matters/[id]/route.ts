@@ -121,7 +121,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update matter" }, { status: 500 });
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/matters");
   // "layout" invalidates the entire matter subtree (overview/context/connect/flow)
   revalidatePath(`/matters/${params.id}`, "layout");
