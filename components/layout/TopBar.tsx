@@ -3,11 +3,13 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bell, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bell, CheckCircle2, Loader2 } from "lucide-react";
 import { useCurrentLawyer, getInitials } from "@/lib/hooks/useCurrentLawyer";
 import type { PendingInvite, ActivityEvent } from "@/app/api/notifications/route";
 
 const STORAGE_KEY = "bell_last_seen";
+const POLL_INTERVAL_MS = 60_000;
 
 function relativeTime(date: string): string {
   const diff = Date.now() - new Date(date).getTime();
@@ -71,12 +73,19 @@ function InviteRow({
 }
 
 export default function TopBar() {
+  const router = useRouter();
   const lawyer = useCurrentLawyer();
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [bellOpen, setBellOpen] = useState(false);
   const [lastSeen, setLastSeen] = useState<number>(0);
+  const [toast, setToast] = useState<string | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
+
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3500);
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -95,8 +104,14 @@ export default function TopBar() {
     }
   }, []);
 
+  // Initial fetch + background polling so the bell stays fresh across sessions
+  // without requiring a hard reload (#98).
   useEffect(() => {
     void fetchNotifications();
+    const interval = setInterval(() => {
+      void fetchNotifications();
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
   }, [fetchNotifications]);
 
   useEffect(() => {
@@ -126,6 +141,7 @@ export default function TopBar() {
   }
 
   async function handleRespond(matterId: string, action: "accept" | "decline") {
+    const matter = invites.find((i) => i.matter_id === matterId);
     const res = await fetch(`/api/matters/${matterId}/team`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -134,7 +150,15 @@ export default function TopBar() {
     if (res.ok) {
       // Remove invite from list and re-fetch events to pick up new rep event on accept
       setInvites((prev) => prev.filter((i) => i.matter_id !== matterId));
-      if (action === "accept") await fetchNotifications();
+      if (action === "accept") {
+        showToast(`You joined ${matter?.matter_title ?? "the matter"}`);
+        await fetchNotifications();
+        // Refresh server-rendered pages (matters list, dashboard) so new
+        // membership shows without a hard reload (#98).
+        router.refresh();
+      } else {
+        showToast("Invite declined");
+      }
     }
   }
 
@@ -144,7 +168,15 @@ export default function TopBar() {
   const hasContent = invites.length > 0 || events.length > 0;
 
   return (
-    <div className="h-14 flex items-center justify-end gap-3 px-6 border-b border-gray-100 bg-white flex-shrink-0">
+    <div className="relative h-14 flex items-center justify-end gap-3 px-6 border-b border-gray-100 bg-white flex-shrink-0">
+      {/* Toast — accept/decline confirmation */}
+      {toast && (
+        <div className="absolute top-3 right-6 z-50 flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg shadow-sm">
+          <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+          <span className="text-xs font-medium text-green-700">{toast}</span>
+        </div>
+      )}
+
       {/* Bell */}
       <div className="relative" ref={bellRef}>
         <button
