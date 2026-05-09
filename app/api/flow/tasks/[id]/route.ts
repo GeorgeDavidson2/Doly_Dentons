@@ -86,28 +86,40 @@ export async function PATCH(
 
   // Auto-update matter status when task completion state changes
   if (data?.matter_id && parsed.data.status !== undefined) {
-    const { data: allTasks } = await service
+    const { data: allTasks, error: allTasksError } = await service
       .from("tasks")
       .select("status")
       .eq("matter_id", data.matter_id);
+
+    if (allTasksError) {
+      return NextResponse.json({ error: allTasksError.message }, { status: 500 });
+    }
 
     if (allTasks && allTasks.length > 0) {
       const allDone = allTasks.every((t) => t.status === "completed");
       const anyOpen = allTasks.some((t) => t.status !== "completed");
 
       if (allDone) {
-        await service
+        const { error: matterUpdateError } = await service
           .from("matters")
           .update({ status: "completed" })
           .eq("id", data.matter_id)
           .eq("status", "active");
+
+        if (matterUpdateError) {
+          return NextResponse.json({ error: matterUpdateError.message }, { status: 500 });
+        }
       } else if (anyOpen) {
         // Revert to active if a task is re-opened on a completed matter
-        await service
+        const { error: matterUpdateError } = await service
           .from("matters")
           .update({ status: "active" })
           .eq("id", data.matter_id)
           .eq("status", "completed");
+
+        if (matterUpdateError) {
+          return NextResponse.json({ error: matterUpdateError.message }, { status: 500 });
+        }
       }
     }
   }
