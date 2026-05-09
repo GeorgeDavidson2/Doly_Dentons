@@ -84,9 +84,38 @@ export async function PATCH(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // Auto-update matter status when task completion state changes
+  if (data?.matter_id && parsed.data.status !== undefined) {
+    const { data: allTasks } = await service
+      .from("tasks")
+      .select("status")
+      .eq("matter_id", data.matter_id);
+
+    if (allTasks && allTasks.length > 0) {
+      const allDone = allTasks.every((t) => t.status === "completed");
+      const anyOpen = allTasks.some((t) => t.status !== "completed");
+
+      if (allDone) {
+        await service
+          .from("matters")
+          .update({ status: "completed" })
+          .eq("id", data.matter_id)
+          .eq("status", "active");
+      } else if (anyOpen) {
+        // Revert to active if a task is re-opened on a completed matter
+        await service
+          .from("matters")
+          .update({ status: "active" })
+          .eq("id", data.matter_id)
+          .eq("status", "completed");
+      }
+    }
+  }
+
   revalidatePath("/dashboard", "layout");
+  revalidatePath("/matters");
   if (data?.matter_id) {
-    revalidatePath(`/matters/${data.matter_id}/flow`);
+    revalidatePath(`/matters/${data.matter_id}`, "layout");
   }
 
   return NextResponse.json(data);

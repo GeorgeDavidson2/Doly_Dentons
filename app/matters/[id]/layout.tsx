@@ -1,15 +1,10 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar } from "lucide-react";
+import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import MatterTabs from "./_components/MatterTabs";
+import MatterStatusSelect from "./_components/MatterStatusSelect";
 import { getMatterDetail } from "./_lib/getMatter";
-
-const STATUS_STYLES: Record<string, string> = {
-  active: "bg-green-50 text-green-700 border-green-200",
-  completed: "bg-blue-50 text-blue-700 border-blue-200",
-  archived: "bg-gray-100 text-gray-500 border-gray-200",
-};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -50,26 +45,23 @@ export default async function MatterLayout({
         <div className="mb-4">
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-xl font-bold text-gray-900">{matter.title}</h1>
-            <span
-              className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
-                STATUS_STYLES[matter.status] ?? STATUS_STYLES.active
-              }`}
-            >
-              {matter.status.charAt(0).toUpperCase() + matter.status.slice(1)}
-            </span>
+            <MatterStatusSelect matterId={matter.id} initialStatus={matter.status} />
           </div>
           <p className="text-sm text-gray-500">
             {matter.client_name}
             <span className="mx-2 text-gray-300">·</span>
             {matter.matter_type}
-            {matter.deadline && (
-              <>
-                <span className="mx-2 text-gray-300">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />
-                  Due {formatDate(matter.deadline)}
-                </span>
-              </>
+            <span className="mx-2 text-gray-300">·</span>
+            {matter.deadline ? (
+              <span className="inline-flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                Due {formatDate(matter.deadline)}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                Created {formatDate(matter.created_at)}
+              </span>
             )}
           </p>
         </div>
