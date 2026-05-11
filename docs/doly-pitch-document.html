@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doly — Pitch Document</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Georgia', serif;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #fff;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 56px;
+    }
+
+    /* Cover */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-bottom: 3px solid #7c3aed;
+      padding-bottom: 60px;
+      margin-bottom: 60px;
+      page-break-after: always;
+    }
+    .cover-tag {
+      font-family: 'Arial', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #7c3aed;
+      margin-bottom: 24px;
+    }
+    .cover h1 {
+      font-size: 52px;
+      font-weight: 900;
+      font-family: 'Arial', sans-serif;
+      color: #0f172a;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .cover h1 span { color: #7c3aed; }
+    .cover-sub {
+      font-size: 18px;
+      color: #475569;
+      margin-bottom: 40px;
+      font-style: italic;
+    }
+    .cover-meta {
+      display: flex;
+      gap: 40px;
+      margin-top: 40px;
+    }
+    .cover-meta-item { border-left: 3px solid #7c3aed; padding-left: 14px; }
+    .cover-meta-item .label {
+      font-family: 'Arial', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .cover-meta-item .value {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      font-family: 'Arial', sans-serif;
+    }
+    .tagline {
+      font-size: 22px;
+      font-style: italic;
+      color: #334155;
+      border-left: 4px solid #7c3aed;
+      padding-left: 20px;
+      margin-top: 32px;
+    }
+
+    /* Sections */
+    h2 {
+      font-family: 'Arial', sans-serif;
+      font-size: 22px;
+      font-weight: 900;
+      color: #0f172a;
+      margin-top: 48px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    h2 .accent { color: #7c3aed; }
+
+    h3 {
+      font-family: 'Arial', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-top: 28px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    p { margin-bottom: 12px; color: #334155; }
+
+    /* Problem cards */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .problem-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 18px;
+      background: #fafafa;
+    }
+    .problem-card .number {
+      font-family: 'Arial', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: #7c3aed;
+      opacity: 0.4;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .problem-card .title {
+      font-family: 'Arial', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .problem-card .desc { font-size: 12px; color: #64748b; margin: 0; }
+
+    /* Feature blocks */
+    .feature-block {
+      border-left: 4px solid #7c3aed;
+      padding-left: 20px;
+      margin: 24px 0;
+    }
+    .feature-block .feature-label {
+      font-family: 'Arial', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #7c3aed;
+      margin-bottom: 4px;
+    }
+    .feature-block h3 { margin-top: 0; text-transform: none; font-size: 16px; letter-spacing: 0; }
+    .feature-block p { margin-bottom: 8px; }
+
+    /* Flow steps */
+    .flow-steps { margin: 16px 0; }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .flow-step .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #7c3aed;
+      color: white;
+      font-family: 'Arial', sans-serif;
+      font-weight: 800;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .flow-step .step-content .step-title {
+      font-family: 'Arial', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      color: #0f172a;
+    }
+    .flow-step .step-content .step-desc { font-size: 12px; color: #475569; }
+
+    /* Tech table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 12px;
+    }
+    th {
+      background: #f1f5f9;
+      font-family: 'Arial', sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 12px;
+      text-align: left;
+      color: #475569;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    td strong { color: #0f172a; font-family: 'Arial', sans-serif; }
+
+    /* Demo story */
+    .story-box {
+      background: #faf5ff;
+      border: 1px solid #ddd6fe;
+      border-radius: 10px;
+      padding: 24px;
+      margin: 20px 0;
+    }
+    .story-box .story-title {
+      font-family: 'Arial', sans-serif;
+      font-weight: 900;
+      font-size: 14px;
+      color: #7c3aed;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Q&A */
+    .qa-item {
+      margin-bottom: 28px;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 28px;
+    }
+    .qa-item:last-child { border-bottom: none; }
+    .qa-q {
+      font-family: 'Arial', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      color: #0f172a;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .qa-q .q-badge {
+      background: #7c3aed;
+      color: white;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 2px 7px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .qa-a {
+      padding-left: 36px;
+      color: #334155;
+      font-size: 13px;
+    }
+    .qa-a ul { padding-left: 18px; margin-top: 6px; }
+    .qa-a ul li { margin-bottom: 4px; color: #475569; }
+
+    /* Callout */
+    .callout {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin: 24px 0;
+      font-style: italic;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .callout strong { color: #a78bfa; font-style: normal; }
+
+    /* Ecosystem */
+    .ecosystem-row {
+      display: flex;
+      gap: 0;
+      margin: 16px 0;
+    }
+    .ecosystem-tool {
+      flex: 1;
+      padding: 14px;
+      border: 1px solid #e2e8f0;
+      border-right: none;
+      font-size: 11px;
+    }
+    .ecosystem-tool:last-child { border-right: 1px solid #e2e8f0; }
+    .ecosystem-tool .tool-name {
+      font-family: 'Arial', sans-serif;
+      font-weight: 800;
+      font-size: 12px;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .ecosystem-tool .tool-role { color: #64748b; }
+    .ecosystem-tool.doly-tool {
+      background: #faf5ff;
+      border-color: #7c3aed;
+      border-width: 2px;
+    }
+    .ecosystem-tool.doly-tool .tool-name { color: #7c3aed; }
+
+    /* Page break */
+    .page-break { page-break-before: always; margin-top: 0; }
+
+    /* Footer */
+    .footer {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      font-family: 'Arial', sans-serif;
+      font-size: 11px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    @media print {
+      body { padding: 0; }
+      .cover { min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="cover-tag">NUGIC Innovation Challenge · Dentons · 2026</div>
+    <h1><span>Doly</span><br>Dentons Polycentric</h1>
+    <p class="cover-sub">A global operating system for the world's largest law firm</p>
+    <div class="tagline">"One firm. Everywhere."</div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <div class="label">Challenge</div>
+        <div class="value">NUGIC Innovation Challenge</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Organisation</div>
+        <div class="value">Dentons Global</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Document</div>
+        <div class="value">Pitch & Q&A Reference</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Date</div>
+        <div class="value">May 2026</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SECTION 1: THE PROBLEM -->
+  <h2><span class="accent">01 /</span> The Problem</h2>
+
+  <p>
+    Dentons is the world's largest law firm — 12,000 lawyers, 200+ offices, 80+ countries, built through 40 mergers over 12 years. That global reach is its greatest competitive advantage. But the same structure that created it also created four compounding coordination failures that no internal system currently solves.
+  </p>
+
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="number">01</div>
+      <div class="title">Knowledge Lives in Silos</div>
+      <p class="desc">Each merger created a separate knowledge base. A partner in London has no visibility into what a colleague in Bogotá knows about Colombian fintech law. Expertise is invisible across borders.</p>
+    </div>
+    <div class="problem-card">
+      <div class="number">02</div>
+      <div class="title">No Incentive to Collaborate Globally</div>
+      <p class="desc">The Swiss verein structure keeps each office's finances fully separate. Cross-border collaboration depends on personal goodwill, not system design. There is no financial reward for sharing expertise.</p>
+    </div>
+    <div class="problem-card">
+      <div class="number">03</div>
+      <div class="title">Cultural Intelligence is Undocumented</div>
+      <p class="desc">Decades of market expertise — how to negotiate in Germany, what Colombian regulators actually care about, how to structure a meeting in Japan — lives only in individual lawyers' heads. Never captured. Never shared.</p>
+    </div>
+    <div class="problem-card">
+      <div class="number">04</div>
+      <div class="title">Time Zones Break Momentum</div>
+      <p class="desc">A five-country matter stalls every time an office closes. Without intelligent routing, progress depends on email chains across 24-hour gaps. Client matters lose days to timezone friction every week.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    "The right expertise exists inside Dentons. The opportunity is making it <strong>instantly accessible</strong> — to every lawyer, on every matter, everywhere."
+  </div>
+
+
+  <!-- SECTION 2: THE SOLUTION -->
+  <h2><span class="accent">02 /</span> The Solution</h2>
+
+  <p>
+    Doly (Dentons Polycentric) is a global operating system that addresses all four problems through three integrated features. It does not replace any existing Dentons tool — it fills the coordination layer that none of them touch.
+  </p>
+
+  <div class="feature-block">
+    <div class="feature-label">Feature 01</div>
+    <h3>Context — Instant Country Intelligence</h3>
+    <p>When a cross-border matter opens, Doly automatically generates a structured intelligence brief for every jurisdiction involved. Each brief covers three dimensions: the legal landscape (primary statutes, court structure, key precedents), cultural intelligence (business norms, negotiation style, communication expectations), and regulatory notes (key regulators, filing obligations, upcoming changes).</p>
+    <p>Briefs are generated in parallel using a 70-billion parameter AI model. They appear on screen in real time — one by one as each completes. A matter with four jurisdictions produces four actionable briefs in under 60 seconds. No client data is used. No confidential information is transmitted.</p>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-label">Feature 02</div>
+    <h3>Connect — Global Expertise Matching</h3>
+    <p>Every lawyer in the firm has a jurisdiction expertise profile: which countries they know, at what depth, across which matter types. When a matter opens, Doly embeds the matter's requirements into a 384-dimensional vector and runs a cosine similarity search across all 12,000 lawyer profiles simultaneously.</p>
+    <p>The result is a ranked list of the firm's best-matched colleagues — not by seniority or office politics, but by verified expertise alignment. Secondary scoring boosts lawyers with multiple matching jurisdictions, language matches, and high reputation scores. A lawyer in Bogotá with five years of Colombian fintech experience is the first result, not buried on page three of an internal directory.</p>
+    <p>A gamified reputation engine replaces the financial incentive the Swiss verein removes. Lawyers earn points for joining matters, generating briefs, contributing field notes, and completing handoffs. Points accumulate on a firm-wide leaderboard. The system creates a career incentive where none previously existed.</p>
+  </div>
+
+  <div class="feature-block">
+    <div class="feature-label">Feature 03</div>
+    <h3>Flow — 24-Hour Work Engine</h3>
+    <p>Tasks on a cross-border matter are assigned to the best-qualified available lawyer based on timezone and expertise — automatically. When a lawyer in Frankfurt closes their laptop at 6pm, Doly routes the next task to a colleague in Bogotá who is currently online and has the matching jurisdiction expertise. When Bogotá closes, the task moves to Singapore.</p>
+    <p>Every handoff preserves full context: what was done, what is needed, who handled it before, in what timezone, with what background. Nothing is lost. The client's matter progresses through 24 hours of working time without a single coordination email.</p>
+  </div>
+
+
+  <!-- SECTION 3: HOW IT WORKS -->
+  <h2 class="page-break"><span class="accent">03 /</span> How It Works — Technical Overview</h2>
+
+  <h3>End-to-End User Flow</h3>
+
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Lawyer creates a matter</div>
+        <div class="step-desc">Title, client name, matter type, jurisdictions (multi-select from 200+ countries), and deadline. This is the only manual input required to activate all three features.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Context activates automatically</div>
+        <div class="step-desc">The system inserts one brief stub per jurisdiction with status "generating", fires parallel AI calls (one per jurisdiction), and updates each as it completes. The frontend polls every 2.5 seconds — briefs pop in live as they finish. The matter creator is awarded 50 reputation points when all briefs are ready.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Connect surfaces matched lawyers</div>
+        <div class="step-desc">The matter's jurisdictions and type are embedded into a 384-dimension vector. A pgvector cosine similarity search runs across all lawyer profiles. Results are re-ranked with secondary scoring (+0.10 per matching jurisdiction, +0.05 per language match, +0.03 per reputation decile) and returned as a ranked list with match scores.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Lawyers are invited to the team</div>
+        <div class="step-desc">One click adds a matched lawyer to the matter team. The inviter earns 20 reputation points. When the invitee accepts, they earn 30 points and gain full access to the matter's context, tasks, and team.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Tasks are created and routed</div>
+        <div class="step-desc">The lead lawyer creates tasks with required jurisdiction, priority, and due date. Clicking "Route" runs the Flow engine: it checks each team member's local time against their working hours, scores candidates by availability + expertise level + reputation, assigns the task to the best available lawyer, and writes a full context snapshot to the audit trail. If no one is available now, it assigns to whoever comes online soonest.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <div class="step-title">Assigned lawyer completes the task</div>
+        <div class="step-desc">The assignee logs in, sees the task under "My Tasks" on their dashboard with full context, clicks the status icon to mark it In Progress then Completed. When all tasks on a matter are completed, the matter auto-completes. The receiving lawyer earns 25 reputation points.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">7</div>
+      <div class="step-content">
+        <div class="step-title">Knowledge is captured in Field Notes</div>
+        <div class="step-desc">At any point, lawyers can contribute jurisdiction field notes — cultural observations, regulatory nuances, market insights. Notes are visible firm-wide, searchable by jurisdiction and matter type. Authors earn 40 reputation points per note, plus 10 per upvote. This is the mechanism by which institutional knowledge stops living in individual heads.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Technology Stack</h3>
+  <table>
+    <tr>
+      <th>Layer</th>
+      <th>Technology</th>
+      <th>Why This Choice</th>
+    </tr>
+    <tr>
+      <td><strong>Framework</strong></td>
+      <td>Next.js 14 App Router + TypeScript</td>
+      <td>Full-stack in one repository — API routes and React UI in a single deployment. Optimal for a small team.</td>
+    </tr>
+    <tr>
+      <td><strong>Database</strong></td>
+      <td>Supabase (PostgreSQL + pgvector)</td>
+      <td>Built-in auth, Row Level Security, and pgvector for vector similarity search — all on one platform.</td>
+    </tr>
+    <tr>
+      <td><strong>Text Generation</strong></td>
+      <td>Groq — Llama 3.3 70B</td>
+      <td>Best-quality free model (70 billion parameters), fastest inference of any free provider. In production, replaced by DAISY.</td>
+    </tr>
+    <tr>
+      <td><strong>Embeddings</strong></td>
+      <td>@xenova/transformers (all-MiniLM-L6-v2)</td>
+      <td>Runs directly in the server process. No API key, no rate limits, no demo-day failures. 384-dimension vectors.</td>
+    </tr>
+    <tr>
+      <td><strong>Deployment</strong></td>
+      <td>Vercel</td>
+      <td>Native Next.js deployment. Zero configuration. Live URL in minutes.</td>
+    </tr>
+    <tr>
+      <td><strong>Auth</strong></td>
+      <td>Supabase Auth (email/magic link)</td>
+      <td>JWT sessions, middleware-enforced route protection, Row Level Security integration.</td>
+    </tr>
+  </table>
+
+
+  <!-- SECTION 4: DEMO STORY -->
+  <h2><span class="accent">04 /</span> The Demo Story</h2>
+
+  <div class="story-box">
+    <div class="story-title">Marcus and Isabella — The Problem Made Human</div>
+    <p><strong>Marcus Chen</strong> is a corporate partner at Dentons Miami. A US technology client needs a coordinated legal strategy across Brazil, Mexico, Colombia, and Germany — delivered in five days.</p>
+    <p><strong>Before Doly:</strong> Marcus emails six colleagues. He hears back from two — neither in the right market. He builds a generic strategy without local confidence, misses a Colombian regulatory change that went live three weeks ago, and the matter takes nine days.</p>
+    <p><strong>With Doly:</strong></p>
+    <div class="flow-steps" style="margin-top:12px;">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-content"><div class="step-title">Marcus creates the matter</div><div class="step-desc">Four jurisdiction briefs begin generating immediately. Colombia appears first — legal framework, cultural notes on Bogotá negotiation style, current fintech regulatory requirements. Germany, Brazil, and Mexico follow in parallel.</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-content"><div class="step-title">Connect surfaces Isabella Reyes</div><div class="step-desc">Isabella — a senior partner in Bogotá with five-star Colombia expertise, three completed LatAm tech matters, and 1,840 reputation points — is the top match at 92% similarity. She was invisible before Doly. Three similar matters this year. Zero discoverability.</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-content"><div class="step-title">Tasks route overnight</div><div class="step-desc">It is 3pm EST. Marcus clicks Route All. Klaus in Frankfurt (9pm local) is offline — his Germany filing task is scheduled for 8am Frankfurt tomorrow. Isabella and Rodrigo in Bogotá and São Paulo are online — their tasks are assigned immediately. Work continues through the night without a single email.</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-content"><div class="step-title">Marcus wakes up to a completed matter</div><div class="step-desc">A locally fluent, four-country strategy — delivered in five days. Marcus's reputation score jumped from 340 to 410. Isabella moved to #3 on the firm-wide leaderboard.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    "Every competitor can copy a tool. <strong>No one can copy a network that has been activating itself for years.</strong> That is Doly."
+  </div>
+
+
+  <!-- SECTION 5: INTEGRATION -->
+  <h2 class="page-break"><span class="accent">05 /</span> Integration with Dentons' Existing Systems</h2>
+
+  <p>
+    Dentons operates a deliberate Build + Buy + Partner technology doctrine across seven active platforms. Doly was designed with full knowledge of this stack. It does not compete with any existing tool — it occupies the coordination layer that none of them touch.
+  </p>
+
+  <table>
+    <tr>
+      <th>Tool</th>
+      <th>What It Does</th>
+      <th>Relationship to Doly</th>
+    </tr>
+    <tr>
+      <td><strong>FleetAI</strong> (built in-house)</td>
+      <td>General-purpose AI chatbot. GPT-4 powered, global, most rapidly adopted legal tech in firm history.</td>
+      <td>No overlap. FleetAI is a chat assistant. Doly is a coordination engine. Different problem entirely.</td>
+    </tr>
+    <tr>
+      <td><strong>DAISY</strong> (built in-house)</td>
+      <td>Model-agnostic GenAI platform (EU/Central Asia). Can swap GPT-4, Claude, Mistral without rebuilding.</td>
+      <td><strong>Critical integration point.</strong> In production, Doly's Groq calls are replaced by DAISY calls. One file change. Doly sits on top of DAISY — not competing with it.</td>
+    </tr>
+    <tr>
+      <td><strong>Legora</strong> (partnership)</td>
+      <td>AI workspace for document review, drafting, and legal research. European offices.</td>
+      <td>Legora handles documents. Doly handles people. A lawyer uses Legora to review a filing and Doly to route that task to the right expert.</td>
+    </tr>
+    <tr>
+      <td><strong>Luminance</strong> (partnership)</td>
+      <td>Legal AI for contract review. Cut a two-month review to two weeks at Dentons Dubai.</td>
+      <td>Contract review only. No overlap with coordination or expertise matching.</td>
+    </tr>
+    <tr>
+      <td><strong>Intanify</strong> (partnership)</td>
+      <td>IP due diligence and asset valuation. White-label, embedded in Dentons interface.</td>
+      <td>IP domain specific. No overlap.</td>
+    </tr>
+    <tr>
+      <td><strong>Noxtua</strong> (partnership)</td>
+      <td>First sovereign AI in Europe. Data never crosses jurisdictional borders. GDPR + EU AI Act compliant.</td>
+      <td>Noxtua confirms data sovereignty is a hard firm requirement. Doly was architecturally designed around this constraint from day one.</td>
+    </tr>
+    <tr>
+      <td><strong>Office Hours</strong> (incubator)</td>
+      <td>Dentons' own legal tech incubator. Proof of Technology → Pilot → Commercial agreement.</td>
+      <td><strong>Primary adoption pathway.</strong> Doly addresses 3 of 6 Office Hours focus areas directly. The NUGIC prototype is Doly's Proof of Technology entry.</td>
+    </tr>
+  </table>
+
+  <h3>The DAISY Integration — One File, Not a Rebuild</h3>
+  <p>
+    DAISY is explicitly model-agnostic — built to swap LLMs without rebuilding. Doly's AI calls are fully abstracted behind <code>lib/ai/groq.ts</code>. Replacing Groq with DAISY is a single-file change: swap the API client, keep the same prompt templates, same response parsing, same data flow. The architecture is identical. This was a deliberate design decision — not retrofitted.
+  </p>
+
+  <h3>Data Sovereignty — Built In, Not Added On</h3>
+  <p>
+    Dentons' investment in Noxtua (the first sovereign AI in Europe — data never crosses jurisdictional borders) confirms that data sovereignty is a non-negotiable firm requirement, driven by GDPR, the EU AI Act, and client confidentiality obligations across 80+ markets.
+  </p>
+  <p>Doly's architecture enforces this from the ground up:</p>
+  <ul style="padding-left: 20px; margin-bottom: 12px; color: #334155;">
+    <li style="margin-bottom: 6px;"><strong>No client data stored</strong> — matters contain only titles, descriptions, and jurisdiction codes. No case documents, no client PII, no privileged communications.</li>
+    <li style="margin-bottom: 6px;"><strong>No data crosses borders</strong> — cross-border routing is task assignment logic only. Nothing replicates across regions.</li>
+    <li style="margin-bottom: 6px;"><strong>Single-region database</strong> — all data stays within one controlled environment, deployable on Dentons' own infrastructure.</li>
+    <li style="margin-bottom: 6px;"><strong>Attorney-client privilege protected</strong> across all 80+ markets.</li>
+  </ul>
+
+
+  <!-- SECTION 6: Q&A -->
+  <h2 class="page-break"><span class="accent">06 /</span> Pitch Q&amp;A</h2>
+  <p style="margin-bottom: 24px; color: #64748b; font-style: italic;">Anticipated judge and panel questions with prepared responses.</p>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      How does Doly integrate with Dentons' current technology stack?
+    </div>
+    <div class="qa-a">
+      <p>Doly was designed with full knowledge of Dentons' existing stack. In production, the Groq AI layer is replaced by DAISY — Dentons' own model-agnostic GenAI platform. DAISY was specifically built to swap AI models without rebuilding systems around them. Doly's AI calls are abstracted behind a single file. That's a one-file change, not an integration project. The database schema, routing logic, matching engine, and all frontend code remain identical. Everything else — Legora for document review, Luminance for contracts, Intanify for IP — is complementary. None of those tools do what Doly does.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      What about data privacy and attorney-client privilege?
+    </div>
+    <div class="qa-a">
+      <p>This was the first architectural constraint, not an afterthought. Dentons' investment in Noxtua — the first sovereign AI in Europe — confirms the firm treats data sovereignty as a hard requirement. Doly enforces three rules:</p>
+      <ul>
+        <li>No client data is stored. Matters contain only titles, jurisdiction codes, and descriptions — never case documents, client PII, or privileged communications.</li>
+        <li>Cross-border routing is task assignment only. No document content or client data crosses jurisdictions.</li>
+        <li>The database is single-region and deployable on Dentons' own infrastructure — not dependent on a third-party cloud.</li>
+      </ul>
+      <p>Attorney-client privilege is fully protected across all 80+ markets.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      Doesn't FleetAI already do this?
+    </div>
+    <div class="qa-a">
+      <p>No. FleetAI is a general-purpose AI chatbot — it answers questions, drafts text, summarises documents. It is excellent at what it does. It does not know which lawyer in the firm is best qualified for a Colombian fintech matter. It does not route tasks across timezones. It does not capture Isabella's market expertise so Marcus can find it three years later. These are different problems. Doly operates at the coordination layer FleetAI doesn't touch.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      Why would lawyers actually use this? What's the adoption incentive?
+    </div>
+    <div class="qa-a">
+      <p>The Swiss verein structure removes the financial incentive for cross-border collaboration — each office's finances are separate. Doly replaces that missing incentive with a reputation engine. Every time a lawyer shares expertise, completes a handoff, or contributes a field note, they earn points that accumulate on a firm-wide leaderboard. That leaderboard is visible to every partner and managing partner in the firm. For a senior associate or junior partner, being visibly ranked as a top regional expert on the firm's internal platform has real career value. The incentive is reputational, not financial — and it compounds over time. A lawyer who contributes consistently becomes more discoverable, gets invited to more matters, earns more points. The network effect is self-reinforcing.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      How accurate is the expertise matching?
+    </div>
+    <div class="qa-a">
+      <p>The matching uses a combination of two signals. First, a vector similarity search across 384-dimension lawyer profile embeddings — this captures semantic similarity between a lawyer's expertise description and the matter's requirements. Second, a structured secondary scoring layer that adds weight for verified jurisdiction codes, language matches, and reputation score. The result is a match score between 0 and 1 for every lawyer, with the top candidates ranked at the front. The structured scoring layer means a lawyer with explicit Colombian jurisdiction expertise will always rank higher than a lawyer whose bio mentions Colombia in passing. Accuracy improves as lawyers complete their profiles — the system rewards completeness with a one-time 60-point bonus.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      What happens if the AI generates incorrect legal information in a brief?
+    </div>
+    <div class="qa-a">
+      <p>The briefs are explicitly framed as intelligence aids, not legal advice — they are the starting point for a lawyer's own analysis, not a substitute for it. Every brief is labelled with its AI-generated status and is designed to be read by a qualified lawyer who will verify the content before relying on it. The purpose is to reduce the time from "matter opened" to "lawyer is contextually prepared" from days to minutes — not to replace legal judgment. The regenerate function also allows any team member to refresh a brief at any time if they believe the content is outdated or incorrect.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      How does this scale to 12,000 lawyers?
+    </div>
+    <div class="qa-a">
+      <p>The matching engine uses pgvector with an IVFFlat approximate nearest-neighbour index — this is the same class of vector search used at companies with hundreds of millions of records. At 12,000 lawyers, a cosine similarity search across all profiles completes in milliseconds. The database schema is normalised and indexed on the query-critical columns: jurisdiction code, country, task status, and assignment. The AI generation layer scales horizontally — each jurisdiction brief is an independent API call, all fired in parallel. The bottleneck at scale is the AI generation rate limit, which in production is replaced by DAISY — a firm-controlled platform with no rate limits.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      What is the adoption pathway into Dentons?
+    </div>
+    <div class="qa-a">
+      <p>Office Hours is Dentons' own legal tech incubator, launched in April 2025 by Dentons UKIME. It follows a formal stage gate: Proof of Technology → Pilot → Commercial agreement, scalable globally. Doly directly addresses three of Office Hours' six official focus areas: knowledge management (Context + Field Notes), communication and collaboration (Connect + gamification), and document lifecycle and matter management (Flow + task routing). The NUGIC Innovation Challenge prototype is Doly's Proof of Technology — the entry point to an Office Hours application. A successful demo here is the first gate in that pathway.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      What makes this defensible? Can't a competitor build the same thing?
+    </div>
+    <div class="qa-a">
+      <p>The technology is not the moat. The network is. Every lawyer profile that is completed, every field note contributed, every matter routed — these are data points that make the matching more accurate, the leaderboard more meaningful, and the network more valuable. A competitor starting from zero has no profiles, no field notes, no reputation history, no trust. Doly's value compounds with every interaction. After two years of active use, the gap between Doly's network and a new entrant is not a feature gap — it is an institutional knowledge gap that cannot be bought or copied. That is the moat.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      What does the prototype demonstrate that a slide deck cannot?
+    </div>
+    <div class="qa-a">
+      <p>Every feature shown is fully functional with real AI, real routing logic, and real data. Create a matter live — briefs generate in real time on screen, not in a mockup. The matching engine runs an actual vector similarity search against seeded lawyer profiles. The routing engine checks real timezone data to decide who is currently working. The reputation points accumulate in the database. This is not a prototype of a concept — it is a working system. The only thing standing between this and a Dentons pilot is replacing Groq with DAISY and deploying on Dentons infrastructure. That is a configuration change, not a rebuild.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      What problem does this solve that email and Teams don't already solve?
+    </div>
+    <div class="qa-a">
+      <p>Email and Teams require you to already know who to contact. The problem Doly solves is discoverability — Marcus does not know Isabella exists until Doly surfaces her. Once he knows, he can email her. The tools are not in competition. Doly operates upstream: it answers "who in the firm is most qualified for this matter?" before the collaboration tools take over. It also solves the passive knowledge problem — Isabella's expertise in Colombian fintech law is invisible to the firm until it is captured in her profile and field notes. Email cannot capture institutional knowledge. Doly is specifically built to.</p>
+    </div>
+  </div>
+
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      What about data privacy when collaborating across countries — what if one country's regulations don't allow another country's lawyer to see that client's information?
+    </div>
+    <div class="qa-a">
+      <p>This is an important distinction. Doly does not move data between countries. What moves is a task assignment — an instruction that says "lawyer X in Bogotá is now working on this task." The task itself contains only a title, description, and jurisdiction code. No client documents. No case files. No privileged communications. Nothing that triggers cross-border data transfer regulations.</p>
+      <p>Think of it like an internal email saying "can you handle this?" — that is not a data transfer in the regulatory sense. The actual legal work, the documents, the client communications — those stay in the lawyer's local system, in the same compliant tools they already use. Doly coordinates the people, not the files.</p>
+      <p>So a German data sovereignty rule that says "German client data cannot leave Germany" is never triggered, because German client data never enters Doly in the first place.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      But to handle the task, the assigned lawyer still needs to read the client's data — doesn't that create a cross-border data exposure?
+    </div>
+    <div class="qa-a">
+      <p>Correct — and that is where the distinction matters. Doly only stores what is entered into the system: matter titles, task descriptions, jurisdiction codes. The actual client documents, the NDA, the regulatory filings — those never enter Doly. They live in the lawyer's local document management system.</p>
+      <p>The key framing is this: <strong>the lawyer has the information, not Doly.</strong> A lawyer in Bogotá working on a Colombian matter already has access to that client's files through Dentons' existing secure systems — their DMS, their email, their client portal. Doly did not give them that access. The matter lead gave them that access when they invited them to the team.</p>
+      <p>Doly's role is purely: the right person is now assigned to this task. What that person then does with the client's information happens entirely outside of Doly, in the same compliant local systems they always use. That is not a Doly compliance question — it is a Dentons compliance question. And Dentons, as a global law firm operating in 80+ jurisdictions, already has the answer.</p>
+    </div>
+  </div>
+
+  <div class="qa-item">
+    <div class="qa-q">
+      <span class="q-badge">Q</span>
+      What if a specific jurisdiction legally prohibits a lawyer from another country accessing that matter at all?
+    </div>
+    <div class="qa-a">
+      <p>That is a matter configuration decision, not a Doly decision. When the lead lawyer creates the matter and goes to Connect, Doly surfaces the best-matched lawyers — but the lead lawyer decides who actually joins the team. If German data protection rules say a German client's matter cannot involve lawyers outside the EU, the lead lawyer simply does not invite the Colombian lawyer to that matter.</p>
+      <p>Doly enforces this through its team membership model: a lawyer only sees a matter if they are explicitly invited and accepted. There is no passive visibility. A lawyer in Bogotá cannot browse matters they are not on. Access is fully controlled by the lead lawyer.</p>
+      <p>This is not a new problem Doly creates. A partner at Dentons Miami already has to make this judgment call when they email a colleague in Bogotá. Doly makes that decision more visible and deliberate — you are explicitly building a team, not casually cc'ing someone on an email chain. The lead lawyer checks the jurisdictional restrictions for that client, invites only lawyers from permitted countries, and Doly routes tasks only within that approved team.</p>
+      <p><strong>Doly surfaces who is qualified. The lead lawyer decides who is permitted. That distinction is intentional.</strong></p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>Doly — Dentons Polycentric · NUGIC Innovation Challenge 2026</span>
+    <span>Confidential · For pitch and review purposes only</span>
+  </div>
+
+</body>
+</html>
