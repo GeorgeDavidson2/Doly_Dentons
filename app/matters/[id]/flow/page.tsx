@@ -17,8 +17,7 @@ interface TeamMember {
 }
 
 interface RouteResult {
-  taskId: string;
-  assignee: { full_name: string; office_city: string } | null;
+  lawyer: { full_name: string; office_city: string } | null;
   message?: string;
 }
 
@@ -100,8 +99,8 @@ export default function FlowPage() {
       if (!res.ok) throw new Error(data.error ?? "Routing failed");
 
       const result = data as RouteResult;
-      if (result.assignee) {
-        showToast("success", `Routed to ${result.assignee.full_name} (${result.assignee.office_city})`);
+      if (result.lawyer) {
+        showToast("success", `Routed to ${result.lawyer.full_name} (${result.lawyer.office_city})`);
       } else {
         showToast("success", result.message ?? "Task scheduled for next available window");
       }

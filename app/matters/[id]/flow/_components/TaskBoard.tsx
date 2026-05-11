@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, User, AlertCircle, CheckCircle2, Loader2, Circle, Pencil } from "lucide-react";
+import { Clock, User, AlertCircle, CheckCircle2, PlayCircle, Circle, Pencil, Loader2 } from "lucide-react";
 import type { Task, Lawyer } from "@/types";
 
 type TaskUpdate = {
@@ -15,7 +15,7 @@ type TaskStatus = "pending" | "in_progress" | "completed" | "blocked";
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; icon: React.ElementType; color: string; bg: string }> = {
   pending:     { label: "Pending",     icon: Circle,       color: "text-gray-400",        bg: "bg-gray-50" },
-  in_progress: { label: "In Progress", icon: Loader2,      color: "text-brand-purple",    bg: "bg-brand-purple/5" },
+  in_progress: { label: "In Progress", icon: PlayCircle,   color: "text-brand-purple",    bg: "bg-brand-purple/5" },
   completed:   { label: "Completed",   icon: CheckCircle2, color: "text-green-500",        bg: "bg-green-50" },
   blocked:     { label: "Blocked",     icon: AlertCircle,  color: "text-red-500",          bg: "bg-red-50" },
 };
@@ -212,9 +212,7 @@ export default function TaskBoard({ tasks, onRouteTask, routingTaskId, onUpdateS
                 onClick={() => void handleStatusClick(task.id, NEXT_STATUS[task.status as TaskStatus])}
                 className="flex-shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple/50 hover:opacity-70 disabled:opacity-40 transition-opacity"
               >
-                <StatusIcon
-                  className={`w-4 h-4 ${status.color} ${task.status === "in_progress" ? "animate-spin" : ""}`}
-                />
+                <StatusIcon className={`w-4 h-4 ${status.color}`} />
               </button>
 
               {/* Expand toggle — title + meta only */}
